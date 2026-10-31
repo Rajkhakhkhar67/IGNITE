@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}My Learning · Learning Platform{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">My Learning</h1>
+        <p class="page-subtitle">Courses you are enrolled in.</p>
+    </div>
+    <a href="{{ url_for('explore') }}" class="btn btn-secondary">Explore More Courses</a>
+</div>
+
+{% if courses %}
+<div class="course-list">
+    {% for c in courses %}
+    <div class="course-list-item">
+        <div class="learning-shelf-cover {% if 'Python' in c.title %}course-cover--python{% elif 'Data Structures' in c.title %}course-cover--structures{% elif 'SQL' in c.title %}course-cover--sql{% elif 'Flask' in c.title %}course-cover--flask{% else %}course-cover--general{% endif %}" aria-hidden="true">
+            <span>{% if 'Python' in c.title %}&lt;/&gt;{% elif 'Data Structures' in c.title %}○─○{% elif 'SQL' in c.title %}▤{% elif 'Flask' in c.title %}↗{% else %}✦{% endif %}</span>
+        </div>
+        <div class="course-list-info">
+            <h3><a href="{{ url_for('course_detail', course_id=c.id) }}">{{ c.title }}</a></h3>
+            <div class="course-list-meta">
+                <span class="tag tag--category">{{ c.category or 'General' }}</span>
+                <span class="tag tag--level">{{ c.level }}</span>
+                <span class="tag tag--published">Enrolled</span>
+            </div>
+            <p class="course-list-stats">By {{ c.instructor_name }} · {{ c.module_count }} module{{ 's' if c.module_count != 1 }} · {{ c.lesson_count }} lesson{{ 's' if c.lesson_count != 1 }}</p>
+            {% if c.continue_lesson %}
+            <p class="course-list-stats course-next-lesson">
+                Up next:
+                {% if c.continue_lesson.lesson_type == 'video' %}<span class="tag tag--category">🎥 VIDEO{% if c.continue_lesson.duration %} · {{ c.continue_lesson.duration|duration }}{% endif %}</span>{% endif %}
+                <strong>{{ c.continue_lesson.title }}</strong>
+            </p>
+            {% endif %}
+            <div class="course-progress-inline">
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: {{ c.progress.percentage }}%;"></div>
+                </div>
+                <span class="progress-label">{{ c.progress.completed }}/{{ c.progress.total }} lessons · {{ c.progress.percentage }}%</span>
+                {% if c.quiz_summary and c.quiz_summary.total_quizzes > 0 %}
+                <span class="progress-label">· Quiz Accuracy: {{ c.quiz_summary.average_score|round|int if c.quiz_summary.average_score is not none else '--' }}%</span>
+                <span class="progress-label">({{ c.quiz_summary.attempted }}/{{ c.quiz_summary.total_quizzes }} quizzes)</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="course-list-actions">
+            <a href="{{ c.continue_url }}" class="btn btn-primary btn-sm">Continue Learning</a>
+            <a href="{{ url_for('smart_revision', course_id=c.id) }}" class="btn btn-secondary btn-sm">Revision</a>
+            <a href="{{ url_for('course_health', course_id=c.id) }}" class="btn btn-secondary btn-sm">Health</a>
+            <a href="{{ url_for('student_course_quiz_stats', course_id=c.id) }}" class="btn btn-secondary btn-sm">Quiz Stats</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>You have not enrolled in any courses yet.</p>
+    <a href="{{ url_for('explore') }}" class="btn btn-primary">Browse Courses</a>
+</div>
+{% endif %}
+{% endblock %}

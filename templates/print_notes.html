@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ page_title }} · Learning Platform</title>
+<style>
+    body { font-family: Georgia, 'Times New Roman', serif; max-width: 780px; margin: 2rem auto; color: #111; line-height: 1.5; }
+    h1 { border-bottom: 3px double #333; padding-bottom: 0.4rem; }
+    h2 { margin-top: 2rem; background: #f0f0f0; padding: 0.35rem 0.6rem; }
+    .note { margin: 0.8rem 0; break-inside: avoid; }
+    .ts { font-family: 'Courier New', monospace; font-weight: bold; margin-right: 0.5rem; }
+    .meta { font-size: 0.85rem; color: #555; }
+    footer { margin-top: 2.5rem; font-size: 0.8rem; color: #666; border-top: 1px solid #ccc; padding-top: 0.6rem; }
+    @media print {
+        body { margin: 0; }
+        h2 { background: none; border-bottom: 1px solid #000; }
+    }
+</style>
+</head>
+<body onload="window.print()">
+<h1>My Notes — {{ current_user.name if current_user else '' }}</h1>
+<p class="meta">Generated {{ now.strftime('%d %b %Y') }} · Learning Platform Study Pack</p>
+
+{% for course_title, notes in grouped.items() %}
+<h2>{{ course_title }}</h2>
+{% for n in notes %}
+<div class="note">
+    <span class="ts">[{{ format_ts(n.timestamp_seconds) }}]</span> {{ n.note_text }}
+    <div class="meta">{{ n.lesson_title }} · {{ n.module_title }}</div>
+</div>
+{% endfor %}
+{% endfor %}
+
+{% if not grouped %}
+<p>No notes yet. Take timestamped notes inside video lessons and they will appear here.</p>
+{% endif %}
+
+<footer>Learning Platform · printable notes · local college project</footer>
+</body>
+</html>

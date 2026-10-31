@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}My Progress{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">My Progress</h1>
+        <p class="page-subtitle">XP, level, streaks and achievements — all from real learning activity</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('study_pack') }}" class="btn btn-secondary">Study Pack</a>
+    </div>
+</div>
+
+<section class="card" style="padding:1.25rem; max-width:720px;">
+    <h2>Level {{ snapshot.level.level }}</h2>
+    <p><strong>{{ snapshot.xp }} XP</strong>
+        {% if snapshot.level.next_threshold %}
+        · {{ snapshot.level.xp_to_next }} XP to Level {{ snapshot.level.level + 1 }}
+        {% else %}
+        · Maximum level reached 🎉
+        {% endif %}
+    </p>
+    <div class="health-bar">
+        <div class="lesson-progress-fill" style="width: {{ snapshot.level.progress_pct }}%;"></div>
+    </div>
+
+    <div style="display:flex; gap:2rem; margin-top:1.25rem; flex-wrap:wrap;">
+        <div>🔥 Current streak<br><strong style="font-size:1.4rem;">{{ snapshot.streaks.current }}</strong> day{{ 's' if snapshot.streaks.current != 1 }}</div>
+        <div>🏅 Longest streak<br><strong style="font-size:1.4rem;">{{ snapshot.streaks.longest }}</strong> day{{ 's' if snapshot.streaks.longest != 1 }}</div>
+        <div>📅 Active days<br><strong style="font-size:1.4rem;">{{ snapshot.streaks.active_days }}</strong></div>
+        <div>🎖 Achievements<br><strong style="font-size:1.4rem;">{{ snapshot.achievements }}/{{ snapshot.achievements_total }}</strong></div>
+    </div>
+</section>
+
+<h2 style="margin-top:2rem;">Achievements</h2>
+<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:0.9rem; max-width:900px;">
+    {% for a in achievements %}
+    <div class="card" style="padding:0.9rem; opacity: {{ '1' if a.unlocked else '0.45' }};">
+        <span style="font-size:1.6rem;">{{ a.icon }}</span>
+        <strong>{{ a.name }}</strong>
+        <p style="margin:0.3rem 0 0; font-size:0.85rem;">{{ a.description }}</p>
+        {% if a.unlocked %}
+        <span class="tag tag--published">Unlocked {{ a.unlocked_at[:10] if a.unlocked_at }}</span>
+        {% else %}
+        <span class="tag tag--draft">Locked</span>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<h2 style="margin-top:2rem;">Recent XP Ledger</h2>
+{% if ledger %}
+<table style="width:100%; max-width:640px; border-collapse:collapse;">
+    <thead><tr>
+        <th style="text-align:left; padding:0.4rem; border-bottom:2px solid #333;">When (UTC)</th>
+        <th style="text-align:left; padding:0.4rem; border-bottom:2px solid #333;">Event</th>
+        <th style="text-align:right; padding:0.4rem; border-bottom:2px solid #333;">XP</th>
+    </tr></thead>
+    <tbody>
+        {% for e in ledger %}
+        <tr>
+            <td style="padding:0.4rem; border-bottom:1px solid #eee;">{{ e.created_at }}</td>
+            <td style="padding:0.4rem; border-bottom:1px solid #eee;">{{ e.event_type | replace('_', ' ') }}</td>
+            <td style="padding:0.4rem; border-bottom:1px solid #eee; text-align:right;">+{{ e.xp_amount }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No XP yet — complete lessons, pass quizzes and review revision items to earn XP.</p>
+{% endif %}
+{% endblock %}

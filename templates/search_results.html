@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Search{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Search</h1>
+        <p class="page-subtitle">Courses, lesson titles{% if current_user and current_user.role == 'student' %}, your notes{% endif %}</p>
+    </div>
+</div>
+
+<form method="GET" action="{{ url_for('search_page') }}" class="search-workspace" role="search">
+    <input type="search" name="q" value="{{ q }}" placeholder="e.g. variables, loops…" autofocus style="flex:1; padding:0.5rem 0.75rem;">
+    <button type="submit" class="btn btn-primary">Search</button>
+</form>
+
+{% if q %}
+<h2 style="margin-top:1.75rem;">Courses ({{ courses | length }})</h2>
+{% for c in courses %}
+<div class="card" style="padding:0.9rem; margin-bottom:0.5rem; max-width:760px;">
+    <a href="{{ url_for('course_detail', course_id=c.id) }}"><strong>{{ c.title }}</strong></a>
+    <span class="tag tag--category">{{ c.category or 'Uncategorized' }}</span>
+    <span class="tag tag--level">{{ c.level }}</span>
+    <div style="font-size:0.85rem;">by {{ c.instructor_name }}</div>
+</div>
+{% else %}
+<p>No courses matched.</p>
+{% endfor %}
+
+{% if current_user and current_user.role == 'student' %}
+<h2>Lessons in My Courses ({{ lessons | length }})</h2>
+{% for l in lessons %}
+<div style="max-width:760px; padding:0.5rem 0.9rem; border-left:3px solid #ddd; margin-bottom:0.4rem;">
+    <a href="{{ url_for('lesson_view', course_id=l.course_id, module_id=l.module_id, lesson_id=l.lesson_id) }}">{{ l.lesson_title }}</a>
+    <span class="tag tag--level">{% if l.lesson_type == 'video' %}🎥 VIDEO{% else %}📄 READ{% endif %}</span>
+    <div style="font-size:0.8rem;">{{ l.course_title }}</div>
+</div>
+{% else %}
+<p>No lessons matched.</p>
+{% endfor %}
+
+<h2>My Notes ({{ notes | length }})</h2>
+{% for n in notes %}
+<div style="max-width:760px; padding:0.5rem 0.9rem; border-left:3px solid #f0c36d; margin-bottom:0.4rem;">
+    <a href="{{ url_for('lesson_view', course_id=n.course_id, module_id=n.module_id, lesson_id=n.lesson_id, t=n.timestamp_seconds) }}">{{ n.note_text[:120] }}</a>
+    <div style="font-size:0.8rem;">in {{ n.lesson_title }}</div>
+</div>
+{% else %}
+<p>No notes matched.</p>
+{% endfor %}
+{% endif %}
+{% else %}
+<section class="search-empty-workspace">
+    <span class="workspace-kicker">Search your learning space</span>
+    <h2>Find a course, lesson, or note.</h2>
+    <p>Search uses the material available in your courses and your saved notes.</p>
+    <div class="search-suggestions" aria-label="Search suggestions">
+        {% for suggestion in ['variables', 'loops', 'SQL', 'Flask'] %}
+        <a href="{{ url_for('search_page', q=suggestion) }}">{{ suggestion }}</a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

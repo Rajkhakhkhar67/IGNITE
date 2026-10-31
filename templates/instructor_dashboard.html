@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Instructor Dashboard · Learning Platform{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <p class="eyebrow">Instructor Panel</p>
+        <h1 class="hero-title">Welcome, <span class="text-accent">{{ current_user.first_name }}</span></h1>
+        <p class="hero-subtitle">
+            Manage your courses, track student progress, and review analytics.
+            More features will be added in future stages.
+        </p>
+    </div>
+</section>
+
+<section class="dashboard-grid">
+    <article class="card card-continue" style="grid-column: span 6;">
+        <div class="card-header">
+            <span class="card-label">Courses</span>
+            <span class="card-badge card-badge--soft">Coming soon</span>
+        </div>
+        <h2 class="card-title">Your Courses</h2>
+        <p class="card-description">
+            Create and manage courses, upload lessons, and organize content for your students.
+        </p>
+        <span class="card-action is-disabled" aria-disabled="true">
+            Manage courses <span aria-hidden="true">→</span>
+        </span>
+    </article>
+
+    <article class="card card-health" style="grid-column: span 6;">
+        <div class="card-header">
+            <span class="card-label">Students</span>
+            <span class="card-badge card-badge--soft">Coming soon</span>
+        </div>
+        <h2 class="card-title">Student Overview</h2>
+        <p class="card-description">
+            View enrolled students, their progress, and performance across your courses.
+        </p>
+        <span class="card-action is-disabled" aria-disabled="true">
+            View students <span aria-hidden="true">→</span>
+        </span>
+    </article>
+
+    <article class="card card-revision" style="grid-column: span 7;">
+        <div class="card-header">
+            <span class="card-label">Analytics</span>
+            <span class="card-badge card-badge--soft">Coming soon</span>
+        </div>
+        <h2 class="card-title">Confusion Analytics</h2>
+        <p class="card-description">
+            See which topics students find difficult, track "Didn't Understand" markers,
+            and identify common areas of confusion.
+        </p>
+        <span class="card-action is-disabled" aria-disabled="true">
+            View analytics <span aria-hidden="true">→</span>
+        </span>
+    </article>
+
+    <article class="card card-streak" style="grid-column: span 5;">
+        <div class="card-header">
+            <span class="card-label">Content</span>
+            <span class="card-badge card-badge--soft">Coming soon</span>
+        </div>
+        <h2 class="card-title">Content Management</h2>
+        <p class="card-description">
+            Upload videos, create quizzes, and build learning modules for your courses.
+        </p>
+        <span class="card-action is-disabled" aria-disabled="true">
+            Manage content <span aria-hidden="true">→</span>
+        </span>
+    </article>
+</section>
+{% endblock %}

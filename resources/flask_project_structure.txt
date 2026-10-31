@@ -1,0 +1,21 @@
+FLASK PROJECT STRUCTURE NOTES — Web Development with Flask
+==========================================================
+
+learning_platform/
+  app.py               # routes (thin controllers)
+  database/db.py       # schema + connection helpers
+  utils/               # business logic helpers
+  templates/           # Jinja HTML
+    base.html          # shared layout (blocks)
+  static/css|js        # stylesheets & scripts
+  uploads/             # user files (never in git!)
+
+REQUEST FLOW
+  Browser -> route decorator -> view function -> helpers/SQL
+          -> render_template -> response
+
+GOLDEN RULES
+  1. Parameterised SQL always (? placeholders).
+  2. Validate on the SERVER, decorate for the client.
+  3. Redirect after successful POST.
+  4. Keep secrets out of code (environment variables).

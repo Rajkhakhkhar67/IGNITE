@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}My Notes · Learning Platform{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('home') }}">Home</a>
+    <span>&rsaquo;</span>
+    <span>My Notes</span>
+</div>
+
+<div class="notes-page">
+    <div class="notes-header">
+        <h1 class="section-title">My Notes</h1>
+        <p class="section-subtitle">All your timestamped notes across courses.</p>
+    </div>
+
+    {% if courses_map %}
+    <form class="filter-bar" onsubmit="return false;" role="search">
+        <input type="search" id="notes-filter" class="filter-search"
+               placeholder="Filter by note text, lesson or course&hellip;" autocomplete="off"
+               aria-label="Filter notes">
+    </form>
+    <p id="notes-no-match" style="display:none;" class="empty-state-description">No notes match your filter.</p>
+
+    {% for cid, course_data in courses_map.items() %}
+    <div class="notes-course-group">
+        <h2 class="notes-course-title">{{ course_data.title }}</h2>
+        {% for lid, lesson_data in course_data.lessons.items() %}
+        <div class="notes-lesson-group">
+            <div class="notes-lesson-header">
+                <span class="notes-module-label">{{ lesson_data.module_title }}</span>
+                <a href="{{ url_for('lesson_view', course_id=cid, module_id=lesson_data.module_id, lesson_id=lid) }}?t={{ lesson_data.notes[0].timestamp_seconds if lesson_data.notes else 0 }}"
+                   class="notes-lesson-link">{{ lesson_data.title }}</a>
+            </div>
+            <ul class="notes-list-global">
+                {% for n in lesson_data.notes %}
+                <li class="notes-item-global">
+                    <a href="{{ url_for('lesson_view', course_id=cid, module_id=lesson_data.module_id, lesson_id=lid) }}?t={{ n.timestamp_seconds }}"
+                       class="notes-ts-link">{{ n.formatted_time }}</a>
+                    <span class="notes-text-global">{{ n.note_text }}</span>
+                    <span class="notes-date-global" title="Created: {{ n.created_at }}{% if n.updated_at != n.created_at %} | Updated: {{ n.updated_at }}{% endif %}">
+                        {{ n.created_at[:10] }}{% if n.updated_at != n.created_at %} (edited){% endif %}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+
+    <div class="notes-total">
+        {{ total_notes }}
+        note(s) across {{ courses_map|length }} course(s)
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">&#128221;</div>
+        <h2 class="empty-state-title">No notes yet</h2>
+        <p class="empty-state-description">
+            Open a video lesson and click <strong>Add Note</strong> to save timestamped notes.
+            They'll appear here for quick reference.
+        </p>
+        <a href="{{ url_for('my_learning') }}" class="btn btn-primary">Go to My Learning</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    "use strict";
+    var input = document.getElementById("notes-filter");
+    if (!input) return;
+
+    input.addEventListener("input", function () {
+        var q = input.value.trim().toLowerCase();
+        var visibleNotes = 0;
+        document.querySelectorAll(".notes-course-group").forEach(function (courseGroup) {
+            var courseVisible = false;
+            courseGroup.querySelectorAll(".notes-lesson-group").forEach(function (lessonGroup) {
+                var lessonTitleOnly = lessonGroup.querySelector(".notes-lesson-header").textContent.toLowerCase();
+                var anyVisible = false;
+                lessonGroup.querySelectorAll(".notes-item-global").forEach(function (item) {
+                    var hay = q === "" || item.textContent.toLowerCase().indexOf(q) !== -1
+                            || lessonTitleOnly.indexOf(q) !== -1;
+                    item.style.display = hay ? "" : "none";
+                    if (hay) { anyVisible = true; visibleNotes++; }
+                });
+                lessonGroup.style.display = anyVisible ? "" : "none";
+                if (anyVisible) courseVisible = true;
+            });
+            courseGroup.style.display = courseVisible ? "" : "none";
+        });
+        var noMatch = document.getElementById("notes-no-match");
+        if (noMatch) noMatch.style.display = (q && visibleNotes === 0) ? "" : "none";
+    });
+})();
+</script>
+{% endblock %}

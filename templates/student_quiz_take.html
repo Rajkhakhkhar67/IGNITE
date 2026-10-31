@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} · {{ course_id }} · Learning Platform{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('course_detail', course_id=course_id) }}">Course</a>
+    <span>&rsaquo;</span>
+    <span>{{ module.title }}</span>
+    <span>&rsaquo;</span>
+    <a href="{{ url_for('lesson_view', course_id=course_id, module_id=module.id, lesson_id=lesson.id) }}">{{ lesson.title }}</a>
+    <span>&rsaquo;</span>
+    <span>Quiz</span>
+</div>
+
+<div class="quiz-container">
+    <div class="quiz-header">
+        <h1 class="quiz-title">{{ quiz.title }}</h1>
+        {% if quiz.description %}
+        <p class="quiz-description">{{ quiz.description }}</p>
+        {% endif %}
+        <div class="quiz-meta">
+            <span class="tag tag--category">{{ questions|length }} Question{{ 's' if questions|length != 1 }}</span>
+            <span class="tag tag--level">Pass: {{ quiz.passing_percentage|round|int }}%</span>
+            {% if quiz_stats and quiz_stats.attempt_count > 0 %}
+            <span class="tag tag--published">Best: {{ quiz_stats.best_score|round|int }}%</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if quiz_stats and quiz_stats.attempt_count > 0 %}
+    <div class="quiz-previous-stats">
+        <h3>Previous Attempts</h3>
+        <p>{{ quiz_stats.attempt_count }} attempt{{ 's' if quiz_stats.attempt_count != 1 }} · Latest: {{ quiz_stats.latest_score|round|int }}% · Best: {{ quiz_stats.best_score|round|int }}%</p>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('student_quiz_submit', course_id=course_id, module_id=module.id, lesson_id=lesson.id) }}" id="quiz-form">
+        {% for q in questions %}
+        <div class="quiz-question-card">
+            <div class="quiz-question-header">
+                <span class="quiz-question-number">Question {{ loop.index }}</span>
+                <span class="tag tag--category">{{ q.concept_tag }}</span>
+            </div>
+            <p class="quiz-question-text">{{ q.question_text }}</p>
+
+            <div class="quiz-options">
+                {% if q.question_type == 'true_false' %}
+                    <label class="quiz-option">
+                        <input type="radio" name="q_{{ q.id }}" value="A" required>
+                        <span class="quiz-option-label">True</span>
+                    </label>
+                    <label class="quiz-option">
+                        <input type="radio" name="q_{{ q.id }}" value="B">
+                        <span class="quiz-option-label">False</span>
+                    </label>
+                {% else %}
+                    {% if q.option_a %}
+                    <label class="quiz-option">
+                        <input type="radio" name="q_{{ q.id }}" value="A" required>
+                        <span class="quiz-option-label">A. {{ q.option_a }}</span>
+                    </label>
+                    {% endif %}
+                    {% if q.option_b %}
+                    <label class="quiz-option">
+                        <input type="radio" name="q_{{ q.id }}" value="B">
+                        <span class="quiz-option-label">B. {{ q.option_b }}</span>
+                    </label>
+                    {% endif %}
+                    {% if q.option_c %}
+                    <label class="quiz-option">
+                        <input type="radio" name="q_{{ q.id }}" value="C">
+                        <span class="quiz-option-label">C. {{ q.option_c }}</span>
+                    </label>
+                    {% endif %}
+                    {% if q.option_d %}
+                    <label class="quiz-option">
+                        <input type="radio" name="q_{{ q.id }}" value="D">
+                        <span class="quiz-option-label">D. {{ q.option_d }}</span>
+                    </label>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="quiz-submit-section">
+            <button type="submit" class="btn btn-primary" id="quiz-submit-btn">Submit Quiz</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    "use strict";
+    var form = document.getElementById("quiz-form");
+    var btn = document.getElementById("quiz-submit-btn");
+    if (form && btn) {
+        form.addEventListener("submit", function() {
+            btn.disabled = true;
+            btn.textContent = "Submitting...";
+        });
+    }
+})();
+</script>
+{% endblock %}

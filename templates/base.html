@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ page_title }} · Learning Platform{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-shell">
+        <header class="site-header">
+            <div class="header-inner">
+                <a href="{{ url_for('home') if current_user and current_user.role == 'student' else url_for('instructor_courses') if current_user and current_user.role == 'instructor' else url_for('login') }}" class="brand" aria-label="Learning Platform home">
+                    <span class="brand-mark" aria-hidden="true">LP</span>
+                    <span class="brand-text">
+                        <span class="brand-name">Learning Platform</span>
+                        <span class="brand-tagline">Study smarter, not harder</span>
+                    </span>
+                </a>
+
+                <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">
+                    <span class="nav-toggle-bar"></span>
+                    <span class="nav-toggle-bar"></span>
+                    <span class="nav-toggle-bar"></span>
+                    <span class="sr-only">Toggle navigation</span>
+                </button>
+
+                <nav id="primary-nav" class="primary-nav" aria-label="Main navigation">
+                    <ul class="nav-list">
+                        {% if current_user %}
+                            {% if current_user.role == 'student' %}
+                        <li><a href="{{ url_for('home') }}" class="nav-link {% if request.endpoint == 'home' %}is-active{% endif %}">Home</a></li>
+                        <li><a href="{{ url_for('my_learning') }}" class="nav-link {% if request.endpoint == 'my_learning' %}is-active{% endif %}">My Learning</a></li>
+                        <li><a href="{{ url_for('explore') }}" class="nav-link {% if request.endpoint == 'explore' %}is-active{% endif %}">Explore</a></li>
+                        <li><a href="{{ url_for('study_pack') }}" class="nav-link {% if request.endpoint in ('study_pack', 'smart_revision', 'course_health', 'revision_history') %}is-active{% endif %}">Revision</a></li>
+                        <li><a href="{{ url_for('notes_page') }}" class="nav-link {% if request.endpoint == 'notes_page' %}is-active{% endif %}">Notes</a></li>
+                        <li><a href="{{ url_for('profile') }}" class="nav-link {% if request.endpoint in ('profile',) %}is-active{% endif %}">Progress</a></li>
+                        <li><a href="{{ url_for('search_page') }}" class="nav-link {% if request.endpoint == 'search_page' %}is-active{% endif %}">Search</a></li>
+                            {% elif current_user.role == 'instructor' %}
+                        <li><a href="{{ url_for('instructor_courses') }}" class="nav-link {% if request.endpoint and 'instructor' in request.endpoint %}is-active{% endif %}">My Courses</a></li>
+                            {% endif %}
+                        {% endif %}
+                    </ul>
+                </nav>
+
+                <div class="header-actions">
+                    {% if current_user %}
+                        <a href="{{ url_for('logout') }}" class="btn btn-secondary auth-btn" title="Log out">Log Out</a>
+                        <span class="profile-avatar" aria-label="{{ current_user.name }}'s profile">{{ current_user.first_name[0] | upper }}</span>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-secondary auth-btn">Log In</a>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary auth-btn">Register</a>
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="flash flash--{{ category }}">
+                            <span>{{ message }}</span>
+                            <button class="flash-close" type="button" aria-label="Dismiss" onclick="this.parentElement.remove()">&times;</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <main class="site-main">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="site-footer">
+            <div class="footer-inner">
+                <p>Learning Platform · Study smarter, not harder.</p>
+                <p class="footer-note">Watch → Note → Practise → Quiz → Revise — your full learning loop.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

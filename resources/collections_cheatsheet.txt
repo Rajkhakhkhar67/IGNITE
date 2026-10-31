@@ -1,0 +1,28 @@
+COLLECTIONS CHEATSHEET
+=====================
+
+LIST (ordered, mutable)
+  nums = [3, 1, 2]
+  nums[0]        # 3
+  nums[-1]       # last
+  nums.append(9)
+  nums.sort()
+  len(nums)
+
+TUPLE (ordered, FIXED)
+  point = (3, 7)
+  x, y = point   # unpacking
+
+DICTIONARY (key -> value)
+  student = {"name": "Riya", "age": 20}
+  student["age"]
+  student["grade"] = "A"
+  for k, v in student.items(): print(k, v)
+
+STRING TOOLS
+  "hi".upper()  "a,b".split(",")  "-".join(["a","b"])
+
+WHEN TO USE WHICH
+  changing sequence ......... list
+  fixed shape ............... tuple
+  lookup by label ........... dict

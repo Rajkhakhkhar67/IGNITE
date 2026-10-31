@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}My Courses · Learning Platform{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">My Courses</h1>
+        <p class="page-subtitle">Manage the courses you have created.</p>
+    </div>
+    <a href="{{ url_for('instructor_course_new') }}" class="btn btn-primary">+ New Course</a>
+</div>
+
+{% if courses %}
+<div class="course-list">
+    {% for c in courses %}
+    <div class="course-list-item">
+        <div class="course-list-info">
+            <h3><a href="{{ url_for('instructor_course_detail', course_id=c.id) }}">{{ c.title }}</a></h3>
+            <div class="course-list-meta">
+                <span class="tag tag--category">{{ c.category or 'Uncategorized' }}</span>
+                <span class="tag tag--level">{{ c.level }}</span>
+                {% if c.status == 'published' %}
+                    <span class="tag tag--published">Published</span>
+                {% else %}
+                    <span class="tag tag--draft">Draft</span>
+                {% endif %}
+            </div>
+            <p class="course-list-stats">{{ c.module_count }} module{{ 's' if c.module_count != 1 }} · {{ c.lesson_count }} lesson{{ 's' if c.lesson_count != 1 }}</p>
+        </div>
+        <div class="course-list-actions">
+            <a href="{{ url_for('instructor_course_detail', course_id=c.id) }}" class="btn btn-secondary btn-sm">Manage</a>
+            <a href="{{ url_for('instructor_course_edit', course_id=c.id) }}" class="btn btn-secondary btn-sm">Edit</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>You have not created any courses yet.</p>
+    <a href="{{ url_for('instructor_course_new') }}" class="btn btn-primary">Create Your First Course</a>
+</div>
+{% endif %}
+{% endblock %}

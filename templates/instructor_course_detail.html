@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} · Course Management{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ course.title }}</h1>
+        <div class="course-list-meta" style="margin-top:0.4rem;">
+            <span class="tag tag--category">{{ course.category or 'Uncategorized' }}</span>
+            <span class="tag tag--level">{{ course.level }}</span>
+            {% if course.status == 'published' %}
+                <span class="tag tag--published">Published</span>
+            {% else %}
+                <span class="tag tag--draft">Draft</span>
+            {% endif %}
+        </div>
+        <p class="page-subtitle">{{ total_lessons }} lesson{{ 's' if total_lessons != 1 }} across {{ modules_data | length }} module{{ 's' if modules_data | length != 1 }}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('instructor_course_insights', course_id=course.id) }}" class="btn btn-secondary">Insights</a>
+        <a href="{{ url_for('instructor_course_edit', course_id=course.id) }}" class="btn btn-secondary">Edit Course</a>
+        <form method="POST" action="{{ url_for('instructor_course_publish', course_id=course.id) }}" style="display:inline;">
+            <button type="submit" class="btn {{ 'btn-secondary' if course.status == 'published' else 'btn-primary' }}">
+                {{ 'Unpublish' if course.status == 'published' else 'Publish' }}
+            </button>
+        </form>
+        <a href="{{ url_for('instructor_delete_course', course_id=course.id) }}" class="btn btn-danger">Delete Course</a>
+    </div>
+</div>
+
+<!-- Modules -->
+<section class="modules-section">
+    <div class="section-header">
+        <h2 class="section-title">Curriculum</h2>
+        <a href="{{ url_for('instructor_module_new', course_id=course.id) }}" class="btn btn-primary btn-sm">+ Add Module</a>
+    </div>
+
+    {% if modules_data %}
+    <div class="module-list">
+        {% for item in modules_data %}
+        <div class="module-block">
+            <div class="module-header">
+                <div>
+                    <span class="module-number">Module {{ item.module.position }}</span>
+                    <h3 class="module-title">{{ item.module.title }}</h3>
+                    {% if item.module.description %}
+                    <p class="module-desc">{{ item.module.description }}</p>
+                    {% endif %}
+                </div>
+                <div style="display:flex; gap:0.4rem;">
+                    <a href="{{ url_for('instructor_module_edit', module_id=item.module.id) }}" class="btn btn-secondary btn-sm">Edit</a>
+                    <form method="POST" action="{{ url_for('instructor_delete_module', module_id=item.module.id) }}"
+                          onsubmit="return confirm('Delete module “{{ item.module.title }}” and ALL its lessons? This cannot be undone.');">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="lesson-list">
+                {% if item.lessons %}
+                    {% for l in item.lessons %}
+                    <div class="lesson-row">
+                        <span class="lesson-type-badge lesson-type--{{ l.lesson_type }}">
+                            {% if l.lesson_type == 'video' %}🎥 VIDEO{% else %}📄 READ{% endif %}
+                            {% if l.duration %}· {{ l.duration|duration }}{% endif %}
+                        </span>
+                        <span class="lesson-title-text">{{ l.title }}</span>
+                        {% if l.lesson_type == 'video' and not l.content_path %}
+                        <a href="{{ url_for('instructor_lesson_edit', lesson_id=l.id) }}"
+                           class="tag tag--draft video-missing-tag" title="No video file attached yet">⚠ VIDEO MISSING</a>
+                        {% endif %}
+                        {% if l.id in lesson_quiz_map %}
+                        <a href="{{ url_for('instructor_quiz_edit', quiz_id=lesson_quiz_map[l.id].id) }}" class="tag tag--category" style="font-size:0.65rem; text-decoration:none; cursor:pointer;">Quiz</a>
+                        {% else %}
+                        <a href="{{ url_for('instructor_quiz_new', lesson_id=l.id) }}" class="btn btn-secondary btn-sm" style="font-size:0.72rem;">+ Quiz</a>
+                        {% endif %}
+                        {% if l.lesson_type == 'video' and not l.content_path %}
+                        <a href="{{ url_for('instructor_lesson_edit', lesson_id=l.id) }}" class="btn btn-primary btn-sm">Upload / Edit Video</a>
+                        {% endif %}
+                        <a href="{{ url_for('instructor_lesson_edit', lesson_id=l.id) }}" class="btn btn-secondary btn-sm">Edit</a>
+                        <a href="{{ url_for('instructor_lesson_preview', course_id=course.id, module_id=item.module.id, lesson_id=l.id) }}" class="btn btn-secondary btn-sm">Preview</a>
+                        <a href="{{ url_for('instructor_lesson_tools', lesson_id=l.id) }}" class="btn btn-secondary btn-sm">Transcript&nbsp;/&nbsp;Code</a>
+                        <form method="POST" action="{{ url_for('instructor_delete_lesson', lesson_id=l.id) }}"
+                              onsubmit="return confirm('Delete lesson “{{ l.title }}” and its quiz, resources, transcripts and exercise? This cannot be undone.');">
+                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="lesson-empty">No lessons yet.</p>
+                {% endif %}
+                <a href="{{ url_for('instructor_lesson_new', module_id=item.module.id) }}" class="add-lesson-link">+ Add Lesson</a>
+            </div>
+
+            <!-- Resource upload + management for each lesson -->
+            {% for l in item.lessons %}
+            <details class="resource-section">
+                <summary>Resources for "{{ l.title }}" ({{ l.resources | length }})</summary>
+                {% if l.resources %}
+                <ul class="resource-list" style="list-style:none; padding:0; margin:0.5rem 0;">
+                    {% for r in l.resources %}
+                    <li style="display:flex; align-items:center; gap:0.6rem; padding:0.3rem 0;">
+                        <span class="tag tag--category">.{{ r.file_type }}</span>
+                        <a href="{{ url_for('uploaded_file', filename=r.file_path) }}" target="_blank">{{ r.title }}</a>
+                        <form method="POST" action="{{ url_for('instructor_delete_resource', resource_id=r.id) }}"
+                              onsubmit="return confirm('Delete resource “{{ r.title }}”?');">
+                            <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                <form method="POST" action="{{ url_for('instructor_add_resource', lesson_id=l.id) }}" enctype="multipart/form-data" class="resource-form">
+                    <input type="text" name="resource_title" placeholder="Resource title" required class="resource-input">
+                    <input type="file" name="resource_file" accept=".pdf,.txt,.py,.zip" required>
+                    <button type="submit" class="btn btn-secondary btn-sm">Upload</button>
+                </form>
+            </details>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No modules yet. Add your first module to start building the curriculum.</p>
+        <a href="{{ url_for('instructor_module_new', course_id=course.id) }}" class="btn btn-primary">+ Add First Module</a>
+    </div>
+    {% endif %}
+</section>
+
+<p style="margin-top:2rem;"><a href="{{ url_for('instructor_courses') }}">← Back to My Courses</a></p>
+{% endblock %}

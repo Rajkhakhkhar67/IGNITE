@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Quiz Stats · {{ course.title }} · Learning Platform{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('my_learning') }}">My Learning</a>
+    <span>&rsaquo;</span>
+    <a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.title }}</a>
+    <span>&rsaquo;</span>
+    <span>Quiz Stats</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Quiz Performance</h1>
+        <p class="page-subtitle">{{ course.title }}</p>
+    </div>
+</div>
+
+<div class="quiz-stats-page">
+    <!-- Summary -->
+    <div class="quiz-stats-summary">
+        <div class="quiz-stat-card">
+            <span class="quiz-stat-big">{{ summary.total_quizzes }}</span>
+            <span class="quiz-stat-desc">Total Quizzes</span>
+        </div>
+        <div class="quiz-stat-card">
+            <span class="quiz-stat-big">{{ summary.attempted }}</span>
+            <span class="quiz-stat-desc">Attempted</span>
+        </div>
+        <div class="quiz-stat-card">
+            <span class="quiz-stat-big">{{ summary.average_score|round|int if summary.average_score is not none else '--' }}{% if summary.average_score is not none %}%{% endif %}</span>
+            <span class="quiz-stat-desc">Answer Accuracy</span>
+        </div>
+    </div>
+
+    <!-- Concept Performance -->
+    {% if concept_perf %}
+    <section class="concept-performance" style="margin-top:2rem;">
+        <h2 class="section-title">Performance by Concept</h2>
+        <div class="module-list">
+            {% for cp in concept_perf %}
+            <div class="module-block concept-row">
+                <div class="concept-info">
+                    <h3 class="module-title">{{ cp.concept_tag }}</h3>
+                    <p class="module-desc">{{ cp.correct }}/{{ cp.total }} correct</p>
+                </div>
+                <div class="concept-accuracy">
+                    {% if cp.accuracy >= 80 %}
+                        <span class="quiz-pass-badge">{{ cp.accuracy }}%</span>
+                    {% elif cp.accuracy >= 50 %}
+                        <span class="quiz-review-badge">{{ cp.accuracy }}%</span>
+                    {% else %}
+                        <span class="quiz-fail-badge">{{ cp.accuracy }}%</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% else %}
+    <div class="empty-state" style="margin-top:2rem;">
+        <p>No quiz data yet. Take a quiz to see your performance by concept.</p>
+    </div>
+    {% endif %}
+</div>
+
+<p style="margin-top:2rem;">
+    <a href="{{ url_for('course_detail', course_id=course.id) }}">&larr; Back to Course</a>
+</p>
+{% endblock %}

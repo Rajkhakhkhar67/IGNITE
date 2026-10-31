@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if editing else 'New' }} Module · {{ course.title }}{% endblock %}
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card" style="max-width:520px;">
+        <h1 class="auth-title">{{ 'Edit Module' if editing else 'Add Module' }}</h1>
+        <p class="auth-subtitle">Course: {{ course.title }}</p>
+
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label for="title">Module Title *</label>
+                <input type="text" id="title" name="title" required
+                       placeholder="e.g. Getting Started"
+                       value="{{ module.title if editing else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="3"
+                          placeholder="Brief module description">{{ module.description if editing else '' }}</textarea>
+            </div>
+
+            {% if editing %}
+            <div class="form-group">
+                <label for="position">Order Position</label>
+                <input type="number" id="position" name="position" min="1"
+                       value="{{ module.position }}">
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary auth-submit">{{ 'Save Changes' if editing else 'Add Module' }}</button>
+        </form>
+
+        <p class="auth-footer">
+            <a href="{{ url_for('instructor_course_detail', course_id=course.id) }}">← Back to Course</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

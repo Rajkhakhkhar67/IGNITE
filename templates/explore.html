@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Explore Courses · Learning Platform{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Explore Courses</h1>
+        <p class="page-subtitle">Discover published courses from our instructors.</p>
+    </div>
+</div>
+
+<!-- Search & Filters -->
+<form method="GET" class="filter-bar">
+    <input type="text" name="search" placeholder="Search courses..." value="{{ search }}" class="filter-search">
+    <select name="category" class="filter-select">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat }}" {{ 'selected' if cat == selected_category }}>{{ cat }}</option>
+        {% endfor %}
+    </select>
+    <select name="level" class="filter-select">
+        <option value="">All Levels</option>
+        <option value="beginner" {{ 'selected' if selected_level == 'beginner' }}>Beginner</option>
+        <option value="intermediate" {{ 'selected' if selected_level == 'intermediate' }}>Intermediate</option>
+        <option value="advanced" {{ 'selected' if selected_level == 'advanced' }}>Advanced</option>
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+    {% if search or selected_category or selected_level %}
+    <a href="{{ url_for('explore') }}" class="btn btn-secondary btn-sm">Clear</a>
+    {% endif %}
+</form>
+
+{% if courses %}
+<div class="course-grid-explore">
+    {% for c in courses %}
+    <a href="{{ url_for('course_detail', course_id=c.id) }}" class="explore-card">
+        <div class="explore-card-thumb {% if 'Python' in c.title %}course-cover--python{% elif 'Data Structures' in c.title %}course-cover--structures{% elif 'SQL' in c.title %}course-cover--sql{% elif 'Flask' in c.title %}course-cover--flask{% else %}course-cover--general{% endif %}">
+            <span class="cover-eyebrow">{{ c.category or 'Learning' }}</span>
+            <strong class="cover-title">{{ c.title }}</strong>
+            <span class="cover-art" aria-hidden="true">{% if 'Python' in c.title %}x = 20<br>print(x){% elif 'Data Structures' in c.title %}○──○<br>&nbsp;&nbsp;└○{% elif 'SQL' in c.title %}SELECT<br>* FROM data{% elif 'Flask' in c.title %}GET&nbsp;→&nbsp;route<br>→ response{% else %}learn<br>·&nbsp;make&nbsp;·&nbsp;grow{% endif %}</span>
+        </div>
+        <div class="explore-card-body">
+            <div class="explore-card-tags">
+                <span class="tag tag--category">{{ c.category or 'General' }}</span>
+                <span class="tag tag--level">{{ c.level }}</span>
+            </div>
+            <h3 class="explore-card-title">{{ c.title }}</h3>
+            <p class="explore-card-desc">{{ c.description[:120] }}{{ '...' if c.description|length > 120 }}</p>
+            <div class="explore-card-footer">
+                <span>By {{ c.instructor_name }}</span>
+                <span>{{ c.module_count }} module{{ 's' if c.module_count != 1 }} · {{ c.lesson_count }} lesson{{ 's' if c.lesson_count != 1 }}</span>
+                {% if c.duration_seconds %}
+                <span>≈ {{ c.duration_seconds|duration }}</span>
+                {% endif %}
+                {% if c.enrolled %}
+                <span class="tag tag--published">Enrolled</span>
+                {% endif %}
+            </div>
+            {% if c.enrolled and c.progress and c.progress.total > 0 %}
+            <div class="explore-card-progress">
+                <div class="lesson-progress-bar">
+                    <div class="lesson-progress-fill" style="width: {{ c.progress.percentage }}%;"></div>
+                </div>
+                <span class="lesson-progress-text">{{ c.progress.completed }}/{{ c.progress.total }} lessons · {{ c.progress.percentage }}%</span>
+            </div>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No courses found{% if search or selected_category or selected_level %} matching your filters{% endif %}.</p>
+    {% if search or selected_category or selected_level %}
+    <a href="{{ url_for('explore') }}" class="btn btn-secondary">Clear Filters</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

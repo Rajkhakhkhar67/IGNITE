@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Lesson Tools</h1>
+        <p class="page-subtitle">
+            {{ lesson.title }} · {{ lesson.lesson_type }}
+            · in <a href="{{ url_for('instructor_course_detail', course_id=course.id) }}">{{ course.title }}</a> / {{ module.title }}
+        </p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('instructor_lesson_preview', course_id=course.id, module_id=module.id, lesson_id=lesson.id) }}" class="btn btn-secondary">Preview Lesson</a>
+    </div>
+</div>
+
+<!-- ═══════════ Transcript segments ═══════════ -->
+<section style="max-width:860px; margin-bottom:2.5rem;">
+    <h2>Transcript</h2>
+    {% if lesson.lesson_type != 'video' %}
+    <p><em>Transcripts apply to video lessons. This is a text lesson.</em></p>
+    {% else %}
+    <p style="font-size:0.88rem;">Students can click a timestamp to jump the video and search these lines.
+        Accept times as seconds (<code>75</code>) or mm:ss / hh:mm:ss (<code>1:15</code>, <code>01:02:03</code>).</p>
+
+    {% if segments %}
+    <table style="width:100%; border-collapse:collapse;">
+        <thead><tr>
+            <th style="text-align:left; padding:0.4rem; border-bottom:2px solid #333;">Start</th>
+            <th style="text-align:left; padding:0.4rem; border-bottom:2px solid #333;">Text</th>
+            <th style="text-align:right; padding:0.4rem; border-bottom:2px solid #333;">Actions</th>
+        </tr></thead>
+        <tbody>
+            {% for seg in segments %}
+            <tr>
+                <td colspan="3" style="padding:0.25rem; border-bottom:1px solid #eee;">
+                    <form method="POST" action="{{ url_for('instructor_transcript_edit', segment_id=seg.id) }}"
+                          style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                        <input type="text" name="start_time" value="{{ format_ts(seg.start_seconds) }}" size="9"
+                               title="mm:ss or hh:mm:ss or plain seconds" required>
+                        <input type="text" name="text" value="{{ seg.text }}" style="flex:1; min-width:280px;" required>
+                        <button type="submit" class="btn btn-secondary btn-sm">Save</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('instructor_transcript_delete', segment_id=seg.id) }}"
+                          onsubmit="return confirm('Delete this segment?');"
+                          style="display:inline; margin-left:0.5rem;">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No transcript segments yet.</p>
+    {% endif %}
+
+    <h3 style="margin-top:1rem;">Add segment</h3>
+    <form method="POST" action="{{ url_for('instructor_transcript_add', lesson_id=lesson.id) }}"
+          style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.4rem;">
+        <input type="text" name="start_time" placeholder="Start (e.g. 0:12)" required>
+        <input type="text" name="text" placeholder="What is said at this moment…" required
+               style="flex:1; min-width:280px;">
+        <button type="submit" class="btn btn-primary">+ Add Segment</button>
+    </form>
+    {% endif %}
+</section>
+
+<!-- ═══════════ Coding exercise ═══════════ -->
+<section style="max-width:860px;">
+    <h2>Coding Exercise</h2>
+    <p style="font-size:0.88rem;">
+        Optional Python practice shown inside the lesson workspace. Students get a code editor with
+        Run / Save / Reset. Runs happen in a restricted local sandbox (timeout + output caps).
+    </p>
+
+    <form method="POST" action="{{ url_for('instructor_exercise_save', lesson_id=lesson.id) }}">
+        <label for="ex-instructions"><strong>Task instructions</strong></label><br>
+        <textarea id="ex-instructions" name="instructions" rows="3" style="width:100%;">{{ exercise.instructions if exercise else '' }}</textarea>
+
+        <label for="ex-starter"><strong>Starter code</strong></label><br>
+        <textarea id="ex-starter" name="starter_code" rows="10" spellcheck="false"
+                  style="width:100%; font-family:Consolas, monospace;">{{ exercise.starter_code if exercise else '# Write your code here\n' }}</textarea>
+
+        <label for="ex-expected"><strong>Expected output (optional)</strong> — when set, students see a match/mismatch hint after running.</label><br>
+        <textarea id="ex-expected" name="expected_output" rows="2"
+                  style="width:100%; font-family:Consolas, monospace;">{{ exercise.expected_output if exercise and exercise.expected_output else '' }}</textarea>
+
+        <div style="margin-top:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button type="submit" class="btn btn-primary">{{ 'Update Exercise' if exercise else 'Create Exercise' }}</button>
+        </div>
+    </form>
+
+    {% if exercise %}
+    <form method="POST" action="{{ url_for('instructor_exercise_delete', exercise_id=exercise.id) }}"
+          onsubmit="return confirm('Remove the coding exercise from this lesson? Student saved code will be deleted too.');"
+          style="margin-top:0.5rem;">
+        <button type="submit" class="btn btn-danger btn-sm">Remove Exercise</button>
+    </form>
+    {% endif %}
+</section>
+{% endblock %}

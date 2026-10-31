@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Revision History</h1>
+        <p class="page-subtitle">{{ course.title }} · {{ total }} total reviews</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('smart_revision', course_id=course.id) }}" class="btn btn-secondary">← Smart Revision</a>
+    </div>
+</div>
+
+{% if rows %}
+<table style="width:100%; max-width:820px; border-collapse:collapse;">
+    <thead><tr>
+        <th style="text-align:left; padding:0.5rem; border-bottom:2px solid #333;">When (UTC)</th>
+        <th style="text-align:left; padding:0.5rem; border-bottom:2px solid #333;">Source</th>
+        <th style="text-align:left; padding:0.5rem; border-bottom:2px solid #333;">Lesson</th>
+        <th style="text-align:left; padding:0.5rem; border-bottom:2px solid #333;">Concept</th>
+    </tr></thead>
+    <tbody>
+        {% for r in rows %}
+        <tr>
+            <td style="padding:0.5rem; border-bottom:1px solid #eee;">{{ r.reviewed_at }}</td>
+            <td style="padding:0.5rem; border-bottom:1px solid #eee;">{{ r.source_type | replace('_', ' ') }}</td>
+            <td style="padding:0.5rem; border-bottom:1px solid #eee;">{{ r.lesson_title or '—' }}</td>
+            <td style="padding:0.5rem; border-bottom:1px solid #eee;">{{ r.concept_tag or '—' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state"><p>No revision reviews recorded yet.</p></div>
+{% endif %}
+{% endblock %}

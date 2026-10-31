@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ page_title }} · Learning Platform</title>
+<style>
+    body { font-family: Georgia, 'Times New Roman', serif; max-width: 900px; margin: 2rem auto; color: #111; }
+    h1 { text-align: center; }
+    .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1.5rem; }
+    .flip-card { border: 2px solid #222; border-radius: 10px; overflow: hidden; break-inside: avoid; }
+    .card-kind { background: #222; color: #fff; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.25rem 0.6rem; }
+    .card-front { padding: 0.9rem; font-weight: bold; min-height: 4.5rem; }
+    .card-back { padding: 0.7rem 0.9rem; border-top: 1px dashed #999; font-size: 0.92rem; min-height: 3.2rem; }
+    .hint { text-align: center; color: #555; font-size: 0.85rem; }
+    @media print {
+        body { margin: 0; }
+        .cards { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+        .flip-card { border-color: #000; }
+    }
+</style>
+</head>
+<body onload="window.print()">
+<h1>Revision Cards — {{ course.title }}</h1>
+<p class="hint">Fold along the dashed line (or cover the lower half) to quiz yourself.</p>
+
+{% if cards %}
+<div class="cards">
+    {% for card in cards %}
+    <div class="flip-card">
+        <div class="card-kind">{{ card.kind }}</div>
+        <div class="card-front">{{ card.front }}</div>
+        <div class="card-back">{{ card.back }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p>No revision material yet — attempt quizzes and add markers to generate cards.</p>
+{% endif %}
+</body>
+</html>

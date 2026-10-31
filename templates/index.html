@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <p class="eyebrow">{{ now.strftime('%A, %d %B %Y') }}</p>
+        <h1 class="hero-title">Good morning, <span class="text-accent">{{ current_user.first_name }}</span></h1>
+        <p class="hero-subtitle">
+            Your learning space is ready. Continue where you left off, review today's revision,
+            and keep your streak alive.
+        </p>
+        <div class="hero-actions">
+            {% if continue_data and continue_data.lesson %}
+            <a href="{{ url_for('lesson_view', course_id=continue_data.course.id, module_id=continue_data.lesson.module_id, lesson_id=continue_data.lesson.id) }}" class="btn btn-primary">Resume last lesson</a>
+            {% else %}
+            <a href="{{ url_for('my_learning') }}" class="btn btn-primary">Start Learning</a>
+            {% endif %}
+            <a href="{{ url_for('explore') }}" class="btn btn-secondary">Browse Courses</a>
+        </div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+        <div class="hero-orb hero-orb--primary"></div>
+        <div class="hero-orb hero-orb--secondary"></div>
+        {% if continue_data %}
+        <div class="hero-card-preview">
+            <span class="preview-label">Continue learning</span>
+            <strong>{{ continue_data.course.title }}</strong>
+            <div class="preview-progress">
+                <div class="preview-progress-bar" style="width: {{ continue_data.progress.percentage }}%;"></div>
+            </div>
+            <span class="preview-meta">{{ continue_data.progress.percentage }}% complete</span>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="dashboard-grid">
+    <!-- Continue Learning -->
+    <article class="card card-feature card-continue">
+        <div class="card-header">
+            <span class="card-label">Continue Learning</span>
+            {% if continue_data %}
+            <span class="card-badge">In progress</span>
+            {% else %}
+            <span class="card-badge card-badge--soft">Not started</span>
+            {% endif %}
+        </div>
+        {% if continue_data %}
+        <h2 class="card-title">{{ continue_data.course.title }}</h2>
+        {% if continue_data.lesson %}
+        <p class="card-description">
+            Next lesson:
+            {% if continue_data.lesson.lesson_type == 'video' %}
+            <span class="tag tag--category">VIDEO{% if continue_data.lesson.duration %} · {{ continue_data.lesson.duration|duration }}{% endif %}</span>
+            {% endif %}
+            {{ continue_data.lesson.title }}
+        </p>
+        {% endif %}
+        <div class="progress-track">
+            <div class="progress-fill" style="width: {{ continue_data.progress.percentage }}%;"></div>
+        </div>
+        <div class="card-meta">
+            <span>{{ continue_data.progress.completed }}/{{ continue_data.progress.total }} lessons</span>
+            <span>{{ continue_data.progress.percentage }}% complete</span>
+        </div>
+        {% if continue_data.lesson %}
+        <a href="{{ url_for('lesson_view', course_id=continue_data.course.id, module_id=continue_data.lesson.module_id, lesson_id=continue_data.lesson.id) }}" class="card-action">
+            Continue lesson
+            <span aria-hidden="true">→</span>
+        </a>
+        {% else %}
+        <a href="{{ url_for('course_detail', course_id=continue_data.course.id) }}" class="card-action">
+            View course
+            <span aria-hidden="true">→</span>
+        </a>
+        {% endif %}
+        {% else %}
+        <h2 class="card-title">No courses yet</h2>
+        <p class="card-description">
+            Enroll in a course to start your learning journey.
+        </p>
+        <a href="{{ url_for('explore') }}" class="card-action">
+            Browse courses
+            <span aria-hidden="true">→</span>
+        </a>
+        {% endif %}
+    </article>
+
+    <!-- Learning Health preview -->
+    <article class="card card-health">
+        <div class="card-header">
+            <span class="card-label">Quick Stats</span>
+        </div>
+        <p class="card-description">Your learning overview at a glance.</p>
+        <div class="health-metrics">
+            <div class="metric">
+                <span class="metric-value">{{ note_counts.notes if note_counts else 0 }}</span>
+                <span class="metric-label">Notes</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value">{{ note_counts.important if note_counts else 0 }}</span>
+                <span class="metric-label">Important</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value">{{ note_counts.confused if note_counts else 0 }}</span>
+                <span class="metric-label">Confused</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value">{{ continue_data.progress.completed if continue_data else 0 }}</span>
+                <span class="metric-label">Lessons Done</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value">{{ continue_data.progress.total if continue_data else 0 }}</span>
+                <span class="metric-label">Total Lessons</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value">{{ continue_data.progress.percentage if continue_data else 0 }}%</span>
+                <span class="metric-label">Progress</span>
+            </div>
+        </div>
+        <div class="health-bar">
+            <span style="width: {{ continue_data.progress.percentage if continue_data else 0 }}%;"></span>
+        </div>
+    </article>
+
+    <!-- Explore courses -->
+    <article class="card card-revision">
+        <div class="card-header">
+            <span class="card-label">Quick Links</span>
+        </div>
+        <ul class="revision-list">
+            <li>
+                <span class="revision-dot"></span>
+                <div>
+                    <a href="{{ url_for('my_learning') }}"><strong>My Learning</strong></a>
+                    <span>View enrolled courses</span>
+                </div>
+            </li>
+            <li>
+                <span class="revision-dot"></span>
+                <div>
+                    <a href="{{ url_for('explore') }}"><strong>Explore Courses</strong></a>
+                    <span>Browse published courses</span>
+                </div>
+            </li>
+        </ul>
+    </article>
+
+    <!-- Enrollment CTA -->
+    <article class="card card-streak">
+        <div class="streak-content" style="width:100%; text-align:center;">
+            <span class="card-label">Ready to learn?</span>
+            <h2 class="card-title">Start a new course</h2>
+            <p class="card-description">Discover courses curated for your learning goals.</p>
+            <a href="{{ url_for('explore') }}" class="btn btn-primary" style="margin-top:0.5rem;">Explore Courses →</a>
+        </div>
+    </article>
+</section>
+
+<section class="courses-section">
+    <div class="section-header">
+        <div>
+            <h2 class="section-title">Browse All Courses</h2>
+            <p class="section-subtitle">Find courses to expand your knowledge.</p>
+        </div>
+        <a href="{{ url_for('explore') }}" class="section-link">View all →</a>
+    </div>
+</section>
+{% endblock %}

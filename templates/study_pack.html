@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Study Pack{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Study Pack</h1>
+        <p class="page-subtitle">Your health, weak spots and printables across every course</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('print_notes') }}" class="btn btn-secondary">🖨 Printable Notes</a>
+    </div>
+</div>
+
+{% if courses %}
+<div class="study-pack-grid">
+    {% for c in courses %}
+    <section class="card study-folder">
+        <span class="study-folder-tab">Revision folder</span>
+        <h2><a href="{{ url_for('course_detail', course_id=c.id) }}">{{ c.title }}</a></h2>
+
+        <p style="margin:0.25rem 0;">
+            Health:
+            {% if c.health.score is none %}
+            <span class="tag tag--draft">No Data</span>
+            {% else %}
+            <strong>{{ c.health.score }}/100</strong>
+            <span class="tag {{ 'tag--published' if c.health.status == 'Strong' else 'tag--category' if c.health.status == 'Needs Review' else 'tag--draft' }}">{{ c.health.status }}</span>
+            {% endif %}
+        </p>
+        <p style="margin:0.25rem 0; font-size:0.9rem;">
+            {{ c.revision_count }} revisions · {{ c.notes }} notes · {{ c.markers }} markers
+            · {{ c.weak_concepts | length }} weak concept{{ 's' if c.weak_concepts | length != 1 }}
+        </p>
+        {% if c.weak_concepts %}
+        <p style="font-size:0.85rem;">
+            Focus on:
+            {% for cpt in c.weak_concepts %}<span class="tag tag--category">{{ cpt.concept_tag }} ({{ cpt.accuracy }}%)</span> {% endfor %}
+        </p>
+        {% endif %}
+
+        <div class="study-folder-actions">
+            <a href="{{ url_for('smart_revision', course_id=c.id) }}" class="btn btn-primary btn-sm">Smart Revision</a>
+            <a href="{{ url_for('course_health', course_id=c.id) }}" class="btn btn-secondary btn-sm">Learning Health</a>
+            <a href="{{ url_for('print_revision_cards', course_id=c.id) }}" class="btn btn-secondary btn-sm">🖨 Revision Cards</a>
+            <a href="{{ url_for('student_course_quiz_stats', course_id=c.id) }}" class="btn btn-secondary btn-sm">Quiz Stats</a>
+        </div>
+    </section>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>Enroll in a course to build your study pack.</p>
+    <a href="{{ url_for('explore') }}" class="btn btn-primary">Explore Courses</a>
+</div>
+{% endif %}
+{% endblock %}

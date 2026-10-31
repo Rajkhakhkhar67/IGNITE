@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Quiz Result · {{ quiz.title }} · Learning Platform{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('course_detail', course_id=course_id) }}">Course</a>
+    <span>&rsaquo;</span>
+    <span>{{ module.title }}</span>
+    <span>&rsaquo;</span>
+    <a href="{{ url_for('lesson_view', course_id=course_id, module_id=module.id, lesson_id=lesson.id) }}">{{ lesson.title }}</a>
+    <span>&rsaquo;</span>
+    <span>Result</span>
+</div>
+
+<div class="quiz-container">
+    <!-- Score Summary -->
+    <div class="quiz-result-summary {% if attempt.passed %}quiz-result--passed{% else %}quiz-result--failed{% endif %}">
+        <div class="quiz-result-score">
+            <span class="quiz-result-big">{{ attempt.score }} / {{ attempt.total_questions }}</span>
+            <span class="quiz-result-pct">{{ attempt.percentage|round|int }}%</span>
+        </div>
+        <div class="quiz-result-verdict">
+            {% if attempt.passed %}
+                <span class="quiz-pass-badge">Passed</span>
+            {% else %}
+                <span class="quiz-fail-badge">Needs Revision</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="quiz-stats-row">
+        <div class="quiz-stat">
+            <span class="quiz-stat-value">{{ quiz_stats.attempt_count }}</span>
+            <span class="quiz-stat-label">Attempts</span>
+        </div>
+        <div class="quiz-stat">
+            <span class="quiz-stat-value">{{ quiz_stats.best_score|round|int }}%</span>
+            <span class="quiz-stat-label">Best Score</span>
+        </div>
+        <div class="quiz-stat">
+            <span class="quiz-stat-value">{{ quiz_stats.latest_score|round|int }}%</span>
+            <span class="quiz-stat-label">Latest</span>
+        </div>
+    </div>
+
+    <!-- Question-by-question feedback -->
+    <h2 class="section-title" style="margin-top:2rem;">Detailed Feedback</h2>
+    {% for r in results %}
+    <div class="quiz-question-card quiz-question-review {% if r.is_correct %}quiz-review--correct{% else %}quiz-review--wrong{% endif %}">
+        <div class="quiz-question-header">
+            <span class="quiz-question-number">Question {{ loop.index }}</span>
+            {% if r.is_correct %}
+            <span class="quiz-review-icon quiz-review-icon--correct">&#10003; Correct</span>
+            {% else %}
+            <span class="quiz-review-icon quiz-review-icon--wrong">&#10007; Incorrect</span>
+            {% endif %}
+        </div>
+        <p class="quiz-question-text">{{ r.question_text }}</p>
+
+        <div class="quiz-review-answers">
+            <div class="quiz-review-row">
+                <span class="quiz-review-label">Your answer:</span>
+                <span class="{% if r.is_correct %}quiz-review-correct-text{% else %}quiz-review-wrong-text{% endif %}">
+                    {% if r.selected_answer == 'A' %}{% if r.question_type == 'true_false' %}True{% else %}A. {{ r.option_a }}{% endif %}{% elif r.selected_answer == 'B' %}{% if r.question_type == 'true_false' %}False{% else %}B. {{ r.option_b }}{% endif %}{% elif r.selected_answer == 'C' %}C. {{ r.option_c }}{% elif r.selected_answer == 'D' %}D. {{ r.option_d }}{% else %}(no answer){% endif %}
+                </span>
+            </div>
+            {% if not r.is_correct %}
+            <div class="quiz-review-row">
+                <span class="quiz-review-label">Correct answer:</span>
+                <span class="quiz-review-correct-text">
+                    {% if r.correct_answer == 'A' %}{% if r.question_type == 'true_false' %}True{% else %}A. {{ r.option_a }}{% endif %}{% elif r.correct_answer == 'B' %}{% if r.question_type == 'true_false' %}False{% else %}B. {{ r.option_b }}{% endif %}{% elif r.correct_answer == 'C' %}C. {{ r.option_c }}{% elif r.correct_answer == 'D' %}D. {{ r.option_d }}{% endif %}
+                </span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if r.explanation %}
+        <div class="quiz-review-explanation">
+            <strong>Explanation:</strong> {{ r.explanation }}
+        </div>
+        {% endif %}
+
+        <div class="quiz-review-concept">
+            <span class="tag tag--category">{{ r.concept_tag }}</span>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Actions -->
+    <div class="quiz-nav-actions">
+        <a href="{{ url_for('student_quiz_take', course_id=course_id, module_id=module.id, lesson_id=lesson.id) }}" class="btn btn-primary">Retake Quiz</a>
+        <a href="{{ url_for('lesson_view', course_id=course_id, module_id=module.id, lesson_id=lesson.id) }}" class="btn btn-secondary">Back to Lesson</a>
+    </div>
+</div>
+{% endblock %}

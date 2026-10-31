@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Delete “{{ course.title }}”?</h1>
+        <p class="page-subtitle">This action cannot be undone.</p>
+    </div>
+</div>
+
+<section class="card" style="padding:1.5rem; max-width:620px;">
+    <p>Deleting this course permanently removes:</p>
+    <ul>
+        <li>{{ stats.modules }} module{{ 's' if stats.modules != 1 }} and {{ stats.lessons }} lesson{{ 's' if stats.lessons != 1 }}</li>
+        <li>All quizzes, questions, attempts, notes, markers, transcripts and coding exercises inside it</li>
+        <li>All uploaded videos and resource files</li>
+        <li>Enrollments and revision history for <strong>{{ stats.students }}</strong> student{{ 's' if stats.students != 1 }}
+            <em>(their XP ledger stays — it is earned across all courses)</em></li>
+    </ul>
+
+    <form method="POST" action="{{ url_for('instructor_delete_course', course_id=course.id) }}"
+          onsubmit="return confirm('FINAL WARNING: permanently delete “{{ course.title }}”?');">
+        <button type="submit" class="btn btn-danger">Yes, delete this course permanently</button>
+        <a href="{{ url_for('instructor_course_detail', course_id=course.id) }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</section>
+{% endblock %}

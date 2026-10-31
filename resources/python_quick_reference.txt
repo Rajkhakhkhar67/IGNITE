@@ -1,0 +1,42 @@
+PYTHON QUICK REFERENCE — Python Fundamentals
+=============================================
+
+VARIABLES
+  name = "Riya"        # str
+  age = 20              # int
+  height = 1.62         # float
+  is_ready = True       # bool
+
+OUTPUT / INPUT
+  print(f"Hi {name}")
+  age_text = input("age: ")   # always str!
+  age = int(age_text)
+
+CONDITIONALS
+  if score >= 50:
+      print("Pass")
+  elif score >= 40:
+      print("Retake")
+  else:
+      print("Fail")
+
+LOOPS
+  for i in range(1, 6):   # 1..5
+      print(i)
+  while count > 0:
+      count -= 1
+
+LISTS / DICTS / TUPLES
+  colors = ["red", "blue"]
+  colors.append("green")
+  point = (3, 7)                 # tuple: fixed
+  student = {"name": "Riya"}
+  student["age"] = 20
+
+FUNCTIONS
+  def power(base, exponent=2):
+      return base ** exponent
+
+USEFUL BUILTINS
+  len(x)  sum(xs)  max(xs)  min(xs)
+  sorted(xs)  range(a, b)  type(x)

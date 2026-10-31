@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }} · Learning Platform{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('instructor_courses') }}">My Courses</a>
+    <span>&rsaquo;</span>
+    <a href="{{ url_for('instructor_course_detail', course_id=course.id) }}">{{ course.title }}</a>
+    <span>&rsaquo;</span>
+    <a href="{{ url_for('instructor_quiz_edit', quiz_id=quiz.id) }}">{{ quiz.title }}</a>
+    <span>&rsaquo;</span>
+    <span>{{ 'Edit Question' if editing else 'New Question' }}</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ 'Edit Question' if editing else 'Add Question' }}</h1>
+        <p class="page-subtitle">Quiz: {{ quiz.title }}</p>
+    </div>
+</div>
+
+<div class="auth-card" style="max-width: 620px;">
+    <form method="POST" class="auth-form">
+        <div class="form-group">
+            <label for="question_text">Question Text *</label>
+            <textarea id="question_text" name="question_text" rows="3" required
+                      placeholder="Enter your question here...">{{ question.question_text if question else '' }}</textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group" style="flex:1;">
+                <label for="question_type">Question Type</label>
+                <select id="question_type" name="question_type" class="filter-select" style="width:100%;">
+                    <option value="multiple_choice" {{ 'selected' if (question and question.question_type == 'multiple_choice') or not question }}>Multiple Choice</option>
+                    <option value="true_false" {{ 'selected' if question and question.question_type == 'true_false' }}>True / False</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex:1;">
+                <label for="position">Position / Order</label>
+                <input type="number" id="position" name="position"
+                       value="{{ question.position if question else (next_position if next_position else 1) }}"
+                       min="1">
+            </div>
+        </div>
+
+        <div class="form-group" id="tf-note" style="display:none;">
+            <span class="form-hint" style="color:var(--color-primary);">True/False questions only use Options A (True) and B (False).</span>
+        </div>
+
+        <div id="mc-options">
+            <div class="form-group">
+                <label for="option_a">Option A *</label>
+                <input type="text" id="option_a" name="option_a"
+                       value="{{ question.option_a if question else '' }}"
+                       placeholder="Option A" required>
+            </div>
+            <div class="form-group">
+                <label for="option_b">Option B *</label>
+                <input type="text" id="option_b" name="option_b"
+                       value="{{ question.option_b if question else '' }}"
+                       placeholder="Option B" required>
+            </div>
+            <div class="form-group">
+                <label for="option_c">Option C</label>
+                <input type="text" id="option_c" name="option_c"
+                       value="{{ question.option_c if question else '' }}"
+                       placeholder="Option C (leave empty if not needed)">
+            </div>
+            <div class="form-group">
+                <label for="option_d">Option D</label>
+                <input type="text" id="option_d" name="option_d"
+                       value="{{ question.option_d if question else '' }}"
+                       placeholder="Option D (leave empty if not needed)">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="correct_answer">Correct Answer *</label>
+            <select id="correct_answer" name="correct_answer" class="filter-select" style="width:100%;" required>
+                <option value="">Select...</option>
+                <option value="A" {{ 'selected' if question and question.correct_answer == 'A' }}>A</option>
+                <option value="B" {{ 'selected' if question and question.correct_answer == 'B' }}>B</option>
+                <option value="C" {{ 'selected' if question and question.correct_answer == 'C' }}>C</option>
+                <option value="D" {{ 'selected' if question and question.correct_answer == 'D' }}>D</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="concept_tag">Concept Tag</label>
+            <input type="text" id="concept_tag" name="concept_tag"
+                   value="{{ question.concept_tag if question else '' }}"
+                   placeholder="e.g. Variables, Data Types, Loops">
+            <span class="form-hint">Used for performance tracking by concept.</span>
+        </div>
+
+        <div class="form-group">
+            <label for="explanation">Explanation (optional)</label>
+            <textarea id="explanation" name="explanation" rows="3"
+                      placeholder="Explain why the correct answer is what it is.">{{ question.explanation if question else '' }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary auth-submit">
+            {{ 'Update Question' if editing else 'Add Question' }}
+        </button>
+    </form>
+</div>
+
+<p style="margin-top:1.5rem;">
+    <a href="{{ url_for('instructor_quiz_edit', quiz_id=quiz.id) }}">&larr; Back to Quiz</a>
+</p>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var typeSelect = document.getElementById("question_type");
+    var mcOpts = document.getElementById("mc-options");
+    var tfNote = document.getElementById("tf-note");
+    var correctSelect = document.getElementById("correct_answer");
+    var optA = document.getElementById("option_a");
+    var optB = document.getElementById("option_b");
+
+    function toggleType() {
+        var isTF = typeSelect.value === "true_false";
+        mcOpts.style.display = isTF ? "none" : "block";
+        tfNote.style.display = isTF ? "block" : "none";
+        optA.required = !isTF;
+        optB.required = !isTF;
+        if (isTF) {
+            optA.placeholder = "True";
+            optB.placeholder = "False";
+            optA.value = optA.value || "True";
+            optB.value = optB.value || "False";
+        } else {
+            optA.placeholder = "Option A";
+            optB.placeholder = "Option B";
+        }
+        // Update correct answer options
+        var val = correctSelect.value;
+        correctSelect.innerHTML = '<option value="">Select...</option>' +
+            '<option value="A"' + (val === "A" ? " selected" : "") + '>A</option>' +
+            '<option value="B"' + (val === "B" ? " selected" : "") + '>B</option>';
+        if (!isTF) {
+            correctSelect.innerHTML += '<option value="C"' + (val === "C" ? " selected" : "") + '>C</option>' +
+                '<option value="D"' + (val === "D" ? " selected" : "") + '>D</option>';
+        }
+    }
+
+    typeSelect.addEventListener("change", toggleType);
+    toggleType();
+})();
+</script>
+{% endblock %}

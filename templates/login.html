@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Log In · Learning Platform{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <aside class="auth-intro" aria-hidden="true">
+        <span class="auth-intro-kicker">Your digital learning studio</span>
+        <h1>Pick up the thread of your learning.</h1>
+        <p>Watch, capture the exact moment, practise, and return when you are ready.</p>
+        <div class="auth-paper-stack">
+            <div class="auth-paper auth-paper--back">REVISE<br><small>your way</small></div>
+            <div class="auth-paper auth-paper--front"><span>LP</span><strong>MAKE THE<br>CONNECTION.</strong><em>study smarter, not harder.</em></div>
+        </div>
+    </aside>
+    <div class="auth-card auth-card--sheet">
+        <span class="auth-sheet-label">STUDENT ACCESS</span>
+        <h1 class="auth-title">Welcome back</h1>
+        <p class="auth-subtitle">Return to your courses, notes, and saved learning moments.</p>
+
+        <form method="POST" action="{{ url_for('login') }}" class="auth-form">
+            <div class="form-group">
+                <label for="email">Email address</label>
+                <input type="email" id="email" name="email" required
+                       placeholder="you@example.com"
+                       value="{{ request.form.get('email', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required
+                       placeholder="Enter your password">
+            </div>
+
+            <button type="submit" class="btn btn-primary auth-submit">Log In</button>
+        </form>
+
+        <p class="auth-footer">
+            Don't have an account?
+            <a href="{{ url_for('register') }}">Register here</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Learning Health</h1>
+        <p class="page-subtitle">{{ course.title }}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('smart_revision', course_id=course.id) }}" class="btn btn-secondary">Smart Revision</a>
+        <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-secondary">Course</a>
+    </div>
+</div>
+
+{% if health.score is none %}
+<div class="empty-state">
+    <p>No learning data yet. Watch a lesson, take a quiz, or add markers to build your health score.</p>
+</div>
+{% else %}
+<section class="card card-health" style="max-width:640px;">
+    <div style="display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap;">
+        <div style="font-size:3rem; font-weight:700;">{{ health.score }}<span style="font-size:1.2rem;">/100</span></div>
+        <div>
+            {% if health.status == 'Strong' %}
+            <span class="tag tag--published">{{ health.status }}</span>
+            {% elif health.status == 'Needs Review' %}
+            <span class="tag tag--category">{{ health.status }}</span>
+            {% else %}
+            <span class="tag tag--draft">{{ health.status }}</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="health-bar" style="margin-top:1rem;">
+        <div class="lesson-progress-fill" style="width: {{ health.score }}%;"></div>
+    </div>
+
+    <ul style="list-style:none; padding:0; margin:1.25rem 0 0; display:grid; gap:0.75rem;">
+        {% for comp in health.components %}
+        <li>
+            <strong>{{ comp.label }}</strong> (weight {{ comp.weight }})
+            <div>{{ comp.value }}{{ comp.suffix }} — {{ comp.detail }}</div>
+        </li>
+        {% endfor %}
+        {% if not health.clarity %}
+        <li><em>Clarity component skipped — no important/confused markers yet (weights renormalised).</em></li>
+        {% endif %}
+    </ul>
+</section>
+
+<h2 style="margin-top:2rem;">Concept Mastery</h2>
+{% if concepts %}
+<table style="width:100%; max-width:720px; border-collapse:collapse;">
+    <thead><tr>
+        <th style="text-align:left; padding:0.5rem; border-bottom:2px solid #333;">Concept</th>
+        <th style="text-align:left; padding:0.5rem; border-bottom:2px solid #333;">Accuracy</th>
+        <th style="text-align:left; padding:0.5rem; border-bottom:2px solid #333;">Answers</th>
+    </tr></thead>
+    <tbody>
+        {% for c in concepts %}
+        <tr>
+            <td style="padding:0.5rem; border-bottom:1px solid #eee;">{{ c.concept_tag }}</td>
+            <td style="padding:0.5rem; border-bottom:1px solid #eee;">{{ c.accuracy }}%</td>
+            <td style="padding:0.5rem; border-bottom:1px solid #eee;">{{ c.correct }}/{{ c.total }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<p style="margin-top:0.75rem;"><a href="{{ url_for('student_course_quiz_stats', course_id=course.id) }}">Detailed quiz stats →</a></p>
+{% else %}
+<p>No quiz answers yet — concept mastery appears after you attempt quizzes with concept tags.</p>
+{% endif %}
+{% endif %}
+
+<p style="margin-top:2rem;"><a href="{{ url_for('my_learning') }}">← My Learning</a></p>
+{% endblock %}

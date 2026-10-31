@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+ENV/
+
+# Flask
+instance/
+.webassets-cache
+
+# SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+
+# User uploads (videos, resources, thumbnails)
+uploads/videos/*
+uploads/resources/*
+uploads/thumbnails/*
+!uploads/videos/.gitkeep
+!uploads/resources/.gitkeep
+!uploads/thumbnails/.gitkeep
+
+# Environment variables
+.env
+.env.*
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

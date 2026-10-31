@@ -1,0 +1,1039 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} · {{ course.title }}{% endblock %}
+{% block content %}
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+    <a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.title }}</a>
+    <span>&rsaquo;</span>
+    <span>{{ module.title }}</span>
+    <span>&rsaquo;</span>
+    <span>{{ lesson.title }}</span>
+    {% if is_preview %}
+    <span class="tag tag--draft" style="margin-left:0.5rem;">Preview Mode</span>
+    {% endif %}
+    {% if not is_preview and progress and progress.is_completed %}
+    <span class="tag tag--completed" style="margin-left:0.5rem;">Completed</span>
+    {% endif %}
+</div>
+
+<!-- Lesson Progress Bar -->
+{% if not is_preview and progress %}
+<div class="lesson-progress-bar-container">
+    <div class="lesson-progress-bar">
+        <div class="lesson-progress-fill" style="width: {{ progress.completion_percentage }}%;"></div>
+    </div>
+    <span class="lesson-progress-text">{{ progress.completion_percentage|round }}% complete</span>
+</div>
+{% endif %}
+
+<div class="lesson-container">
+    <div class="lesson-workspace-heading">
+        <span class="workspace-kicker">Learning workspace</span>
+        <h1 class="lesson-title">{{ lesson.title }}</h1>
+    </div>
+    <p class="lesson-meta-line">
+        {% if lesson.lesson_type == 'video' %}
+        <span class="lesson-type-badge lesson-type--video">🎥 VIDEO LESSON</span>
+        {% else %}
+        <span class="lesson-type-badge lesson-type--text">📄 READ</span>
+        {% endif %}
+        {% if lesson.duration %}
+        <span class="lesson-duration">{{ lesson.duration|duration }}</span>
+        {% endif %}
+    </p>
+    {% if lesson.description %}
+    <p class="lesson-description">{{ lesson.description }}</p>
+    {% endif %}
+
+    {% if lesson.lesson_type == 'video' %}
+    {% if lesson.content_path %}
+    <div class="video-player" id="video-player-wrapper">
+        <video id="lesson-video" controls width="100%" preload="metadata"
+               {% if progress and progress.last_position_seconds > 0 %}data-resume="{{ progress.last_position_seconds }}"{% endif %}>
+            <source src="{{ url_for('uploaded_file', filename=lesson.content_path) }}" type="video/{{ lesson.content_path.split('.')[-1] }}">
+            Your browser does not support the video tag.
+        </video>
+        {% if not is_preview and progress and progress.last_position_seconds > 0 %}
+        <div class="resume-banner" id="resume-banner">
+            <span>Resume from {{ format_ts(progress.last_position_seconds) }}</span>
+            <button class="btn btn-primary btn-sm" id="resume-btn">Resume</button>
+            <button class="btn btn-secondary btn-sm" id="restart-btn">Start Over</button>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <!-- Professional placeholder when the video file has not been attached yet -->
+    <div class="video-placeholder" id="video-placeholder">
+        <div class="video-placeholder-icon" aria-hidden="true">🎬</div>
+        <p class="video-placeholder-eyebrow">VIDEO LESSON</p>
+        <h2 class="video-placeholder-title">{{ lesson.title }}</h2>
+        <p class="video-placeholder-text"><strong>Video file not attached yet.</strong></p>
+        <p class="video-placeholder-hint">The instructor can upload an MP4 from course management.</p>
+    </div>
+    {% endif %}
+
+    <!-- Clickable transcript with search (kept intact; seeking needs the video) -->
+    {% if transcript_segments %}
+    <div class="lesson-transcript" id="transcript-section">
+        <div class="transcript-header">
+            <h3>Transcript</h3>
+            <input type="search" id="transcript-search" placeholder="Search transcript&hellip;" autocomplete="off">
+        </div>
+        <ul class="transcript-list" id="transcript-list">
+            {% for seg in transcript_segments %}
+            <li class="transcript-segment" data-seconds="{{ seg.start_seconds }}" data-text="{{ seg.text|lower }}">
+                <button type="button" class="transcript-time" data-seek="{{ seg.start_seconds }}">{{ format_ts(seg.start_seconds) }}</button>
+                <span class="transcript-text">{{ seg.text }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        <p id="transcript-no-match" style="display:none;">No transcript lines match your search.</p>
+        <p class="transcript-note">Transcript timings belong to the configured lesson content
+            {% if lesson.duration %}(≈ {{ lesson.duration|duration }}){% endif %}.</p>
+    </div>
+    {% endif %}
+
+    {% if not is_preview %}
+    <!-- Timestamp Action Buttons (capture current video time automatically) -->
+    <div class="timestamp-actions" id="timestamp-actions">
+        <span class="capture-label">Capture this moment</span>
+        <button class="btn ts-btn ts-btn--note" id="add-note-btn" title="Add a note at the current timestamp"
+                {% if not lesson.content_path %}disabled{% endif %}>
+            <span class="ts-icon">📝</span> Add Note
+        </button>
+        <button class="btn ts-btn ts-btn--important" id="add-important-btn" title="Mark as important moment"
+                {% if not lesson.content_path %}disabled{% endif %}>
+            <span class="ts-icon">⭐</span> Important
+        </button>
+        <button class="btn ts-btn ts-btn--confused" id="add-confused-btn" title="Mark as didn't understand"
+                {% if not lesson.content_path %}disabled{% endif %}>
+            <span class="ts-icon">❓</span> Didn't Understand
+        </button>
+        <span class="ts-current-time" id="ts-current-time"></span>
+        {% if not lesson.content_path %}
+        <span class="ts-hint-no-video">Attach a video to capture timestamps.</span>
+        {% endif %}
+    </div>
+
+    <!-- Note Composer (hidden by default) -->
+    <div class="note-composer" id="note-composer" style="display:none;">
+        <div class="note-composer-header">
+            <span class="note-composer-ts" id="note-composer-ts">at 00:00</span>
+            <button class="btn-close" id="note-composer-close" title="Cancel">&times;</button>
+        </div>
+        <textarea id="note-composer-text" class="note-composer-input" rows="3" maxlength="2000" placeholder="Write your note here..."></textarea>
+        <div class="note-composer-footer">
+            <span class="char-count"><span id="note-char-count">0</span>/2000</span>
+            <div class="note-composer-actions">
+                <button class="btn btn-secondary btn-sm" id="note-composer-cancel">Cancel</button>
+                <button class="btn btn-primary btn-sm" id="note-composer-save">Save Note</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confused Marker Composer: timestamp captured on click, text optional -->
+    <div class="marker-composer" id="marker-composer" style="display:none;">
+        <div class="note-composer-header">
+            <span class="note-composer-ts" id="marker-composer-ts">at 00:00</span>
+            <button class="btn-close" id="marker-composer-close" title="Cancel">&times;</button>
+        </div>
+        <textarea id="marker-composer-text" class="note-composer-input" rows="2" maxlength="500"
+                  placeholder="What didn't you understand? (optional — e.g. Why does Python change this to float?)"></textarea>
+        <div class="note-composer-footer">
+            <span class="char-count"><span id="marker-char-count">0</span>/500</span>
+            <div class="note-composer-actions">
+                <button class="btn btn-secondary btn-sm" id="marker-composer-cancel">Cancel</button>
+                <button class="btn btn-primary btn-sm" id="marker-composer-save">Flag Moment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Note Edit Composer (hidden by default) -->
+    <div class="note-composer" id="note-edit-composer" style="display:none;">
+        <div class="note-composer-header">
+            <span class="note-composer-ts" id="note-edit-ts">Edit note</span>
+            <button class="btn-close" id="note-edit-close" title="Cancel">&times;</button>
+        </div>
+        <textarea id="note-edit-text" class="note-composer-input" rows="3" maxlength="2000"></textarea>
+        <div class="note-composer-footer">
+            <span class="char-count"><span id="note-edit-char-count">0</span>/2000</span>
+            <div class="note-composer-actions">
+                <button class="btn btn-secondary btn-sm" id="note-edit-cancel">Cancel</button>
+                <button class="btn btn-primary btn-sm" id="note-edit-save">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MY MOMENTS: merged timestamped timeline for this lesson -->
+    <div class="moments-section" id="moments-section">
+        <div class="moments-header">
+            <h3>MY MOMENTS</h3>
+            <span class="tab-count" id="moments-count">{{ moments|length }}</span>
+        </div>
+        <p class="moments-subtitle">Your notes, important moments and questions for this lesson — click any timestamp to jump straight back to that moment in the video.</p>
+        {% if moments %}
+        <ul class="moments-list" id="moments-list">
+            {% for mo in moments %}
+            <li class="moment-item moment-item--{{ mo.kind }}" data-kind="{{ mo.kind }}" id="moment-{{ mo.kind }}-{{ mo.id }}">
+                <button type="button" class="moment-timestamp moment-ts--{{ mo.kind }}" data-seek="{{ mo.ts }}"
+                        title="Jump to {{ format_ts(mo.ts) }}">{{ mo.icon }} {{ format_ts(mo.ts) }}</button>
+                <div class="moment-body">
+                    <p class="moment-text" {% if mo.kind == 'note' %}id="moment-text-note-{{ mo.id }}"{% endif %} data-role="text">{% if mo.text %}{{ mo.text }}{% else %}<em class="moment-no-label">No label yet</em>{% endif %}</p>
+                    <div class="moment-meta">
+                        <span class="moment-kind-badge moment-kind-badge--{{ mo.kind }}">{{ mo.kind_label }}</span>
+                        <span class="note-date" title="Created: {{ mo.created_at }}">{{ mo.created_at[:10] }}{% if mo.updated_at and mo.updated_at != mo.created_at %} (edited){% endif %}</span>
+                        <div class="note-actions-inline">
+                            {% if mo.kind == 'note' %}
+                            <button class="btn-icon note-edit-btn" data-note-id="{{ mo.id }}" data-ts="{{ mo.ts }}" data-text="{{ mo.text }}" title="Edit">&#9998;</button>
+                            {% else %}
+                            <button type="button" class="btn-icon moment-label-btn" data-marker-id="{{ mo.id }}" title="Add / edit label">&#9998;</button>
+                            {% endif %}
+                            <button type="button" class="btn-icon moment-delete-btn" data-kind="{{ mo.kind }}" data-id="{{ mo.id }}" title="Remove">&times;</button>
+                        </div>
+                    </div>
+                    {% if mo.kind != 'note' %}
+                    <div class="moment-label-editor" style="display:none;">
+                        <input type="text" class="moment-label-input" maxlength="500" value="{{ mo.text }}"
+                               placeholder="e.g. Remember variable naming rules">
+                        <button type="button" class="btn btn-secondary btn-sm moment-label-save" data-marker-id="{{ mo.id }}">Save</button>
+                    </div>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-tab-msg" id="empty-moments">Nothing saved yet. While watching, use 📝 Add Note, ⭐ Important or ❓ Didn't Understand to capture a moment at the current time.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% elif lesson.lesson_type == 'text' and lesson.content_text %}
+    <div class="lesson-content" id="lesson-text-content"
+         data-lesson-id="{{ lesson.id }}">
+        {{ lesson.content_text | replace('\n', '<br>') | safe }}
+    </div>
+    {% else %}
+    <div class="lesson-content">
+        <p>Content not available yet.</p>
+    </div>
+    {% endif %}
+
+    <!-- Mark Complete -->
+    {% if not is_preview %}
+    <div class="lesson-complete-section">
+        {% if progress and progress.is_completed %}
+        <span class="completed-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Lesson Completed
+        </span>
+        {% else %}
+        <button class="btn btn-primary" id="mark-complete-btn" data-lesson-id="{{ lesson.id }}">
+            Mark as Complete
+        </button>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Python coding playground (when instructor configured one) -->
+    {% if exercise %}
+    <div class="playground-section" id="playground"
+         data-exercise-id="{{ exercise.id }}"
+         data-starter-code="{{ exercise.starter_code }}">
+        <h3>Python Practice</h3>
+        {% if exercise.instructions %}
+        <p class="playground-instructions">{{ exercise.instructions }}</p>
+        {% endif %}
+        <textarea id="pg-editor" spellcheck="false" rows="12"
+                  aria-label="Python code editor">{{ saved_code if saved_code is not none else exercise.starter_code }}</textarea>
+        <div class="playground-actions">
+            {% if is_preview %}
+            <span class="playground-status">Preview mode — students get Run / Save / Reset here.</span>
+            {% else %}
+            <button type="button" class="btn btn-primary btn-sm" id="pg-run">▶ Run Code</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="pg-save">Save</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="pg-reset">Reset starter code</button>
+            <span class="playground-status" id="pg-status"></span>
+            {% endif %}
+        </div>
+        {% if exercise.expected_output %}
+        <p class="playground-expected"><strong>Expected output:</strong> {{ exercise.expected_output }}</p>
+        {% endif %}
+        <pre class="playground-output" id="pg-output" aria-live="polite">Run your code to see output here.</pre>
+    </div>
+    {% endif %}
+
+    <!-- Quick Check / Quiz -->
+    {% if not is_preview and quiz %}
+    <div class="lesson-quiz-section">
+        <div class="quiz-quick-check">
+            <div class="quiz-quick-header">
+                <h3 class="quiz-quick-title">Quick Check — {{ quiz.title }}</h3>
+                <span class="tag tag--category">{{ quiz.question_count if quiz.question_count is defined else '' }} Questions</span>
+            </div>
+            {% if quiz_stats and quiz_stats.attempt_count > 0 %}
+            <div class="quiz-quick-stats">
+                <span>Latest: {{ quiz_stats.latest_score|round|int }}%</span>
+                <span>Best: {{ quiz_stats.best_score|round|int }}%</span>
+                <span>Attempts: {{ quiz_stats.attempt_count }}</span>
+            </div>
+            {% else %}
+            <p class="quiz-quick-not-attempted">Not attempted yet</p>
+            {% endif %}
+            <a href="{{ url_for('student_quiz_take', course_id=course.id, module_id=module.id, lesson_id=lesson.id) }}" class="btn btn-primary btn-sm">
+                {{ 'Retake Quiz' if quiz_stats and quiz_stats.attempt_count > 0 else 'Start Quiz' }} &rarr;
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Resources -->
+    {% if resources %}
+    <div class="resources-section">
+        <h3>Resources</h3>
+        <ul class="resource-list">
+            {% for r in resources %}
+            <li>
+                <a href="{{ url_for('uploaded_file', filename=r.file_path) }}" target="_blank" class="resource-link">
+                    {{ r.title }} <span class="resource-type">({{ r.file_type | upper }})</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Navigation -->
+    <div class="lesson-nav">
+        {% if prev_lesson %}
+        <a href="{{ url_for('lesson_view', course_id=prev_lesson.course_id, module_id=prev_lesson.module_id, lesson_id=prev_lesson.id) }}" class="btn btn-secondary">&larr; Previous</a>
+        {% else %}
+        <span></span>
+        {% endif %}
+        {% if next_lesson %}
+        <a href="{{ url_for('lesson_view', course_id=next_lesson.course_id, module_id=next_lesson.module_id, lesson_id=next_lesson.id) }}" class="btn btn-primary">Next &rarr;</a>
+        {% else %}
+        <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-primary">Back to Course</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if not is_preview %}
+<script>
+(function() {
+    "use strict";
+
+    var LESSON_ID = {{ lesson.id }};
+    var LESSON_TYPE = "{{ lesson.lesson_type }}";
+    var IS_COMPLETED = {{ 'true' if (progress and progress.is_completed) else 'false' }};
+    var SEEK_TO = {{ seek_to if seek_to is not none else 'null' }};
+    var HAS_VIDEO_FILE = {{ 'true' if lesson.content_path else 'false' }};
+    var MAX_NOTE_LEN = 2000;
+    var MAX_MARKER_TEXT = 500;
+
+    // ---- AJAX helper (extends existing postJSON pattern) ----
+    function ajaxRequest(method, url, data, cb) {
+        var xhr = new XMLHttpRequest();
+        xhr.open(method, url, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try { cb(null, JSON.parse(xhr.responseText)); }
+                catch(e) { cb(e); }
+            }
+        };
+        if (data !== null) {
+            xhr.send(JSON.stringify(data));
+        } else {
+            xhr.send();
+        }
+    }
+    function postJSON(url, data, cb) { ajaxRequest("POST", url, data, cb); }
+    function putJSON(url, data, cb) { ajaxRequest("PUT", url, data, cb); }
+    function deleteJSON(url, cb) { ajaxRequest("DELETE", url, null, cb); }
+
+    // =====================================================================
+    // ONE reusable seek function for the whole workspace.
+    // Notes, markers, transcript timestamps and deep-link ?seek=/?t= all
+    // route through window.seekLessonVideo(seconds).
+    // =====================================================================
+    var video = document.getElementById("lesson-video");
+
+    function seekLessonVideo(seconds) {
+        var v = document.getElementById("lesson-video");
+        if (!v || isNaN(seconds)) return false;
+        seconds = Math.max(0, seconds);
+        if (v.duration && !isNaN(v.duration) && seconds > v.duration) {
+            seconds = Math.max(0, v.duration - 0.25);
+        }
+        v.currentTime = seconds;
+        var wrap = document.getElementById("video-player-wrapper") || v;
+        if (wrap.scrollIntoView) {
+            try { wrap.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) {}
+        }
+        var p = v.play();
+        if (p && p.catch) p.catch(function() {});
+        return true;
+    }
+    // Exposed so every script block (transcript, etc.) shares this system.
+    window.seekLessonVideo = seekLessonVideo;
+
+    // Single delegated click handler: anything with [data-seek] seeks.
+    document.addEventListener("click", function(e) {
+        var el = e.target.closest("[data-seek]");
+        if (!el) return;
+        var s = parseFloat(el.getAttribute("data-seek"));
+        if (!isNaN(s)) {
+            e.preventDefault();
+            seekLessonVideo(s);
+        }
+    });
+
+    // Deep-link seek (?seek=167 or legacy ?t=167): jump once metadata is ready.
+    if (SEEK_TO !== null && document.getElementById("lesson-video")) {
+        var vEl = document.getElementById("lesson-video");
+        if (vEl.readyState >= 1) {
+            seekLessonVideo(SEEK_TO);
+        } else {
+            vEl.addEventListener("loadedmetadata", function() {
+                seekLessonVideo(SEEK_TO);
+            });
+        }
+    }
+
+    // ---- Video progress tracking (Stage 4, preserved) ----
+    var heartbeatInterval = null;
+    var resumeBanner = document.getElementById("resume-banner");
+    var resumeBtn = document.getElementById("resume-btn");
+    var restartBtn = document.getElementById("restart-btn");
+
+    if (video) {
+        if (resumeBtn) {
+            resumeBtn.addEventListener("click", function() {
+                video.currentTime = parseFloat(video.getAttribute("data-resume")) || 0;
+                if (resumeBanner) resumeBanner.style.display = "none";
+                video.play();
+            });
+        }
+        if (restartBtn) {
+            restartBtn.addEventListener("click", function() {
+                video.currentTime = 0;
+                if (resumeBanner) resumeBanner.style.display = "none";
+                video.play();
+            });
+        }
+
+        function saveProgress() {
+            if (video.paused && video.currentTime === 0) return;
+            postJSON("/api/progress", {
+                lesson_id: LESSON_ID,
+                position_seconds: Math.floor(video.currentTime),
+                watched_seconds: Math.floor(video.currentTime)
+            });
+        }
+
+        video.addEventListener("play", function() {
+            if (resumeBanner) resumeBanner.style.display = "none";
+            if (!heartbeatInterval) {
+                heartbeatInterval = setInterval(saveProgress, 15000);
+            }
+        });
+
+        video.addEventListener("pause", function() {
+            saveProgress();
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+        });
+
+        video.addEventListener("seeked", function() {
+            saveProgress();
+        });
+
+        video.addEventListener("ended", function() {
+            saveProgress();
+            if (!IS_COMPLETED) {
+                postJSON("/api/progress/complete", { lesson_id: LESSON_ID }, function(err, res) {
+                    if (!err && res && res.ok) {
+                        IS_COMPLETED = true;
+                        updateCompleteUI();
+                    }
+                });
+            }
+        });
+
+        window.addEventListener("beforeunload", function() {
+            saveProgress();
+        });
+    }
+
+    // ---- Text lesson progress (Stage 4, preserved) ----
+    var textContent = document.getElementById("lesson-text-content");
+    if (textContent && LESSON_TYPE === "text") {
+        var textTracked = false;
+        var lastTextPost = 0;
+        function trackTextRead() {
+            var rect = textContent.getBoundingClientRect();
+            var totalHeight = textContent.scrollHeight;
+            var viewportHeight = window.innerHeight;
+            var scrolled = Math.max(0, viewportHeight - rect.top);
+            var pct = Math.min(100, Math.round(scrolled / totalHeight * 100));
+            var now = Date.now();
+            if (now - lastTextPost > 5000) {
+                lastTextPost = now;
+                postJSON("/api/progress/text-read", { lesson_id: LESSON_ID, read_percentage: pct });
+            }
+            if (pct >= 85 && !textTracked) {
+                textTracked = true;
+                postJSON("/api/progress/text-read", { lesson_id: LESSON_ID, read_percentage: 100 });
+            }
+        }
+        window.addEventListener("scroll", trackTextRead, { passive: true });
+        trackTextRead();
+    }
+
+    // ---- Mark as Complete (Stage 4, preserved) ----
+    var completeBtn = document.getElementById("mark-complete-btn");
+    if (completeBtn) {
+        completeBtn.addEventListener("click", function() {
+            completeBtn.disabled = true;
+            completeBtn.textContent = "Completing...";
+            postJSON("/api/progress/complete", { lesson_id: LESSON_ID }, function(err, res) {
+                if (!err && res && res.ok) {
+                    IS_COMPLETED = true;
+                    updateCompleteUI();
+                } else {
+                    completeBtn.disabled = false;
+                    completeBtn.textContent = "Mark as Complete";
+                }
+            });
+        });
+    }
+
+    function updateCompleteUI() {
+        var section = document.querySelector(".lesson-complete-section");
+        if (section) {
+            section.innerHTML = '<span class="completed-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Lesson Completed</span>';
+        }
+        var progressFill = document.querySelector(".lesson-progress-fill");
+        if (progressFill) progressFill.style.width = "100%";
+        var progressText = document.querySelector(".lesson-progress-text");
+        if (progressText) progressText.textContent = "100% complete";
+    }
+
+    // =====================================================================
+    // STAGE 5 — Timestamp Notes & Markers → VIDEO WORKSPACE ("My Moments")
+    // =====================================================================
+    if (LESSON_TYPE !== "video") return;
+
+    // ---- Timestamp display ----
+    var tsDisplay = document.getElementById("ts-current-time");
+    function updateTimeDisplay() {
+        if (video && tsDisplay) {
+            tsDisplay.textContent = formatTime(video.currentTime);
+        }
+    }
+    if (video) {
+        video.addEventListener("timeupdate", updateTimeDisplay);
+        updateTimeDisplay();
+    }
+
+    function formatTime(sec) {
+        sec = Math.max(0, Math.floor(sec));
+        var h = Math.floor(sec / 3600);
+        var m = Math.floor((sec % 3600) / 60);
+        var s = sec % 60;
+        if (h > 0) return h + ":" + pad(m) + ":" + pad(s);
+        return pad(m) + ":" + pad(s);
+    }
+    function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+    function escapeHtml(s) {
+        var div = document.createElement("div");
+        div.appendChild(document.createTextNode(s));
+        return div.innerHTML;
+    }
+
+    // ---- My Moments list helpers ----
+    var KIND_META = {
+        note:      { icon: "\uD83D\uDCDD", label: "Note" },
+        important: { icon: "\u2B50",           label: "Important" },
+        confused:  { icon: "\u2753",           label: "Didn't Understand" }
+    };
+
+    function updateMomentsCount(delta) {
+        var el = document.getElementById("moments-count");
+        if (el) {
+            var cur = parseInt(el.textContent, 10) || 0;
+            el.textContent = Math.max(0, cur + delta);
+        }
+    }
+
+    function buildMomentItem(kind, m) {
+        var meta = KIND_META[kind];
+        var li = document.createElement("li");
+        li.className = "moment-item moment-item--" + kind;
+        li.setAttribute("data-kind", kind);
+        li.id = "moment-" + kind + "-" + m.id;
+
+        var inner =
+            '<button type="button" class="moment-timestamp moment-ts--' + kind + '" data-seek="' + m.timestamp_seconds + '" title="Jump to ' + m.formatted_time + '">' +
+            meta.icon + ' ' + m.formatted_time + '</button>' +
+            '<div class="moment-body">' +
+            '<p class="moment-text"' + (kind === "note" ? ' id="moment-text-note-' + m.id + '"' : '') + ' data-role="text">' +
+            (m.optional_text || m.note_text ? escapeHtml(m.optional_text || m.note_text) : '<em class="moment-no-label">No label yet</em>') +
+            '</p>' +
+            '<div class="moment-meta">' +
+            '<span class="moment-kind-badge moment-kind-badge--' + kind + '">' + meta.label + '</span>' +
+            '<span class="note-date">' + (m.created_at || "").substring(0, 10) + '</span>' +
+            '<div class="note-actions-inline">';
+        if (kind === "note") {
+            inner += '<button class="btn-icon note-edit-btn" data-note-id="' + m.id + '" data-ts="' + m.timestamp_seconds + '" data-text="' + escapeHtml(m.note_text || "") + '" title="Edit">&#9998;</button>';
+        } else {
+            inner += '<button type="button" class="btn-icon moment-label-btn" data-marker-id="' + m.id + '" title="Add / edit label">&#9998;</button>';
+        }
+        inner +=
+            '<button type="button" class="btn-icon moment-delete-btn" data-kind="' + kind + '" data-id="' + m.id + '" title="Remove">&times;</button>' +
+            '</div></div>';
+        if (kind !== "note") {
+            inner +=
+                '<div class="moment-label-editor" style="display:none;">' +
+                '<input type="text" class="moment-label-input" maxlength="500" value="' + escapeHtml(m.optional_text || "") + '" placeholder="e.g. Remember variable naming rules">' +
+                '<button type="button" class="btn btn-secondary btn-sm moment-label-save" data-marker-id="' + m.id + '">Save</button>' +
+                '</div>';
+        }
+        inner += '</div>';
+        li.innerHTML = inner;
+        return li;
+    }
+
+    function prependMoment(kind, payload) {
+        var emptyMsg = document.getElementById("empty-moments");
+        if (emptyMsg) emptyMsg.style.display = "none";
+        var list = document.getElementById("moments-list");
+        if (!list) {
+            list = document.createElement("ul");
+            list.className = "moments-list";
+            list.id = "moments-list";
+            document.getElementById("moments-section").appendChild(list);
+        }
+        list.prepend(buildMomentItem(kind, payload));
+        updateMomentsCount(1);
+    }
+
+    // ---- Add Note (captures currentTime while paused) ----
+    var addNoteBtn = document.getElementById("add-note-btn");
+    var composer = document.getElementById("note-composer");
+    var composerTs = document.getElementById("note-composer-ts");
+    var composerText = document.getElementById("note-composer-text");
+    var composerSave = document.getElementById("note-composer-save");
+    var composerCancel = document.getElementById("note-composer-cancel");
+    var composerClose = document.getElementById("note-composer-close");
+    var noteCharCount = document.getElementById("note-char-count");
+    var capturedNoteTs = 0;
+
+    function openComposer() {
+        if (!video) return;
+        video.pause();
+        capturedNoteTs = Math.floor(video.currentTime);
+        composerTs.textContent = "at " + formatTime(capturedNoteTs);
+        composerText.value = "";
+        noteCharCount.textContent = "0";
+        composer.style.display = "block";
+        composerText.focus();
+    }
+    function closeComposer() {
+        composer.style.display = "none";
+        composerText.value = "";
+    }
+
+    if (addNoteBtn) addNoteBtn.addEventListener("click", openComposer);
+    if (composerCancel) composerCancel.addEventListener("click", closeComposer);
+    if (composerClose) composerClose.addEventListener("click", closeComposer);
+    if (composerText) {
+        composerText.addEventListener("input", function() {
+            noteCharCount.textContent = composerText.value.length;
+        });
+    }
+
+    if (composerSave) {
+        composerSave.addEventListener("click", function() {
+            var text = composerText.value.trim();
+            if (!text) return;
+            composerSave.disabled = true;
+            composerSave.textContent = "Saving...";
+            postJSON("/api/lessons/" + LESSON_ID + "/notes", {
+                timestamp_seconds: capturedNoteTs,
+                note_text: text
+            }, function(err, res) {
+                composerSave.disabled = false;
+                composerSave.textContent = "Save Note";
+                if (!err && res && res.ok) {
+                    closeComposer();
+                    prependMoment("note", res.note);
+                    if (window.lpToast) window.lpToast("Note saved at " + res.note.formatted_time);
+                } else {
+                    alert(err ? "Error saving note" : (res.error || "Error saving note"));
+                }
+            });
+        });
+    }
+
+    if (composerText) {
+        composerText.addEventListener("keydown", function(e) {
+            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                if (composerSave) composerSave.click();
+            }
+        });
+    }
+
+    // ---- Add Important marker: IMMEDIATELY saved at current time ----
+    var addImportantBtn = document.getElementById("add-important-btn");
+    if (addImportantBtn) {
+        addImportantBtn.addEventListener("click", function() {
+            if (!video) return;
+            var ts = Math.floor(video.currentTime);
+            postJSON("/api/lessons/" + LESSON_ID + "/markers", {
+                timestamp_seconds: ts,
+                marker_type: "important",
+                optional_text: ""
+            }, function(err, res) {
+                if (!err && res && res.ok) {
+                    prependMoment("important", res.marker);
+                    if (window.lpToast) window.lpToast("Important moment saved at " + res.marker.formatted_time);
+                } else {
+                    var msg = (res && res.error) ? res.error : "Error adding marker";
+                    if (msg.indexOf("similar marker") === -1) alert(msg);
+                }
+            });
+        });
+    }
+
+    // ---- Didn't Understand: captures timestamp, optional question text ----
+    var confusedBtn = document.getElementById("add-confused-btn");
+    var mcBox = document.getElementById("marker-composer");
+    var mcTsLabel = document.getElementById("marker-composer-ts");
+    var mcText = document.getElementById("marker-composer-text");
+    var mcSave = document.getElementById("marker-composer-save");
+    var mcCancel = document.getElementById("marker-composer-cancel");
+    var mcClose = document.getElementById("marker-composer-close");
+    var mcCount = document.getElementById("marker-char-count");
+    var capturedConfusedTs = 0;
+
+    function openMarkerComposer() {
+        if (!video) return;
+        video.pause();
+        capturedConfusedTs = Math.floor(video.currentTime);
+        mcTsLabel.textContent = "at " + formatTime(capturedConfusedTs);
+        mcText.value = "";
+        mcCount.textContent = "0";
+        mcBox.style.display = "block";
+        mcText.focus();
+    }
+    function closeMarkerComposer() {
+        mcBox.style.display = "none";
+        mcText.value = "";
+    }
+
+    if (confusedBtn) confusedBtn.addEventListener("click", openMarkerComposer);
+    if (mcCancel) mcCancel.addEventListener("click", closeMarkerComposer);
+    if (mcClose) mcClose.addEventListener("click", closeMarkerComposer);
+    if (mcText) {
+        mcText.addEventListener("input", function() {
+            mcCount.textContent = mcText.value.length;
+        });
+        mcText.addEventListener("keydown", function(e) {
+            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                if (mcSave) mcSave.click();
+            }
+        });
+    }
+    if (mcSave) {
+        mcSave.addEventListener("click", function() {
+            var text = mcText.value.trim();
+            mcSave.disabled = true;
+            mcSave.textContent = "Saving...";
+            postJSON("/api/lessons/" + LESSON_ID + "/markers", {
+                timestamp_seconds: capturedConfusedTs,
+                marker_type: "confused",
+                optional_text: text
+            }, function(err, res) {
+                mcSave.disabled = false;
+                mcSave.textContent = "Flag Moment";
+                if (!err && res && res.ok) {
+                    closeMarkerComposer();
+                    prependMoment("confused", res.marker);
+                    if (window.lpToast) window.lpToast("Question saved at " + res.marker.formatted_time);
+                } else {
+                    var msg = (res && res.error) ? res.error : "Error adding marker";
+                    if (msg.indexOf("similar marker") === -1) alert(msg);
+                }
+            });
+        });
+    }
+
+    // ---- Edit Note ----
+    var editComposer = document.getElementById("note-edit-composer");
+    var editTs = document.getElementById("note-edit-ts");
+    var editText = document.getElementById("note-edit-text");
+    var editSave = document.getElementById("note-edit-save");
+    var editCancel = document.getElementById("note-edit-cancel");
+    var editClose = document.getElementById("note-edit-close");
+    var editCharCount = document.getElementById("note-edit-char-count");
+    var editingNoteId = null;
+
+    document.addEventListener("click", function(e) {
+        var editBtn = e.target.closest(".note-edit-btn");
+        if (editBtn) {
+            editingNoteId = parseInt(editBtn.getAttribute("data-note-id"));
+            var ts = parseFloat(editBtn.getAttribute("data-ts"));
+            var text = editBtn.getAttribute("data-text");
+            editTs.textContent = "Edit note at " + formatTime(ts);
+            editText.value = text;
+            editCharCount.textContent = text.length;
+            editComposer.style.display = "block";
+            editText.focus();
+        }
+    });
+
+    if (editText) {
+        editText.addEventListener("input", function() {
+            editCharCount.textContent = editText.value.length;
+        });
+    }
+    function closeEditComposer() {
+        editComposer.style.display = "none";
+        editingNoteId = null;
+        editText.value = "";
+    }
+    if (editCancel) editCancel.addEventListener("click", closeEditComposer);
+    if (editClose) editClose.addEventListener("click", closeEditComposer);
+
+    if (editSave) {
+        editSave.addEventListener("click", function() {
+            if (!editingNoteId) return;
+            var text = editText.value.trim();
+            if (!text) return;
+            editSave.disabled = true;
+            editSave.textContent = "Saving...";
+            putJSON("/api/notes/" + editingNoteId, { note_text: text }, function(err, res) {
+                editSave.disabled = false;
+                editSave.textContent = "Update";
+                if (!err && res && res.ok) {
+                    closeEditComposer();
+                    var textEl = document.getElementById("moment-text-note-" + editingNoteId);
+                    if (textEl) textEl.textContent = res.note.note_text;
+                    var editBtn2 = document.querySelector('.note-edit-btn[data-note-id="' + editingNoteId + '"]');
+                    if (editBtn2) editBtn2.setAttribute("data-text", res.note.note_text);
+                    var item = document.querySelector('.moment-item[data-kind="note"]#moment-note-' + editingNoteId);
+                    if (item) {
+                        var dateSpan = item.querySelector(".note-date");
+                        if (dateSpan) dateSpan.textContent = res.note.created_at.substring(0, 10) + " (edited)";
+                    }
+                } else {
+                    alert(err ? "Error" : (res.error || "Error updating note"));
+                }
+            });
+        });
+    }
+    if (editText) {
+        editText.addEventListener("keydown", function(e) {
+            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                if (editSave) editSave.click();
+            }
+        });
+    }
+
+    // ---- Marker label (optional text) inline editor ----
+    document.addEventListener("click", function(e) {
+        var lblBtn = e.target.closest(".moment-label-btn");
+        if (lblBtn) {
+            var item = lblBtn.closest(".moment-item");
+            var editor = item.querySelector(".moment-label-editor");
+            if (editor) {
+                editor.style.display = editor.style.display === "none" ? "flex" : "none";
+                var input = editor.querySelector(".moment-label-input");
+                if (editor.style.display !== "none" && input) input.focus();
+            }
+            return;
+        }
+        var saveLbl = e.target.closest(".moment-label-save");
+        if (saveLbl) {
+            var mItem = saveLbl.closest(".moment-item");
+            var input2 = mItem.querySelector(".moment-label-input");
+            var mid = parseInt(saveLbl.getAttribute("data-marker-id"), 10);
+            saveLbl.disabled = true;
+            putJSON("/api/markers/" + mid, { optional_text: input2 ? input2.value : "" }, function(err, res) {
+                saveLbl.disabled = false;
+                if (!err && res && res.ok) {
+                    var txt = mItem.querySelector('[data-role="text"]');
+                    if (txt) {
+                        txt.textContent = res.marker.optional_text || "";
+                        if (!res.marker.optional_text) {
+                            txt.innerHTML = '<em class="moment-no-label">No label yet</em>';
+                        }
+                    }
+                    var ed = mItem.querySelector(".moment-label-editor");
+                    if (ed) ed.style.display = "none";
+                } else {
+                    alert(err ? "Error" : (res.error || "Error updating label"));
+                }
+            });
+        }
+    });
+
+    // ---- Delete note / marker (single delegated handler) ----
+    document.addEventListener("click", function(e) {
+        var delBtn = e.target.closest(".moment-delete-btn");
+        if (!delBtn) return;
+        var kind = delBtn.getAttribute("data-kind");
+        var id = parseInt(delBtn.getAttribute("data-id"), 10);
+        if (!confirm(kind === "note" ? "Delete this note?" : "Remove this marker?")) return;
+        var url = kind === "note" ? "/api/notes/" + id : "/api/markers/" + id;
+        deleteJSON(url, function(err, res) {
+            if (!err && res && res.ok) {
+                var item = document.getElementById("moment-" + kind + "-" + id);
+                if (item) item.remove();
+                updateMomentsCount(-1);
+                var remaining = document.querySelectorAll("#moments-list .moment-item");
+                if (remaining.length === 0) {
+                    var emptyMsg = document.getElementById("empty-moments");
+                    if (emptyMsg) emptyMsg.style.display = "";
+                }
+            } else {
+                alert(err ? "Error" : (res.error || "Error deleting"));
+            }
+        });
+    });
+
+})();
+</script>
+{% endif %}
+
+<script>
+/* Workspace: transcript search + coding playground.
+   Transcript click-to-seek needs NO extra listener here: the single
+   delegated [data-seek] dispatcher in the player script above already
+   routes every timestamp button through window.seekLessonVideo(). */
+(function() {
+    "use strict";
+
+    /* ---- Transcript search filter ---- */
+    var transcriptSection = document.getElementById("transcript-section");
+    if (transcriptSection) {
+        var searchInput = document.getElementById("transcript-search");
+        var noMatch = document.getElementById("transcript-no-match");
+        if (searchInput) {
+            searchInput.addEventListener("input", function() {
+                var q = searchInput.value.trim().toLowerCase();
+                var visible = 0;
+                transcriptSection.querySelectorAll(".transcript-segment").forEach(function(row) {
+                    var hit = !q || (row.getAttribute("data-text") || "").indexOf(q) !== -1;
+                    row.style.display = hit ? "" : "none";
+                    if (hit) visible++;
+                });
+                if (noMatch) noMatch.style.display = visible === 0 ? "" : "none";
+            });
+        }
+    }
+
+    /* ---- Coding playground ---- */
+    var playground = document.getElementById("playground");
+    if (playground) {
+        var EX_ID = playground.getAttribute("data-exercise-id");
+        var STARTER = playground.getAttribute("data-starter-code") || "";
+        var editor = document.getElementById("pg-editor");
+        var output = document.getElementById("pg-output");
+        var status = document.getElementById("pg-status");
+
+        function setStatus(msg) { if (status) status.textContent = msg; }
+
+        function postJSON(url, payload) {
+            return fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload || {})
+            }).then(function(resp) {
+                if (!resp.ok) throw new Error("Request failed (" + resp.status + ")");
+                return resp.json();
+            });
+        }
+
+        var runBtn = document.getElementById("pg-run");
+        if (runBtn) {
+            runBtn.addEventListener("click", function() {
+                var code = editor.value;
+                runBtn.disabled = true;
+                setStatus("Running\u2026");
+                output.className = "playground-output is-running";
+                output.textContent = "";
+                postJSON("/api/exercises/" + EX_ID + "/run", { code: code })
+                    .then(function(data) {
+                        var text = data.stdout || "";
+                        if (data.stderr) text += (text ? "\n" : "") + data.stderr;
+                        if (data.rejected_module) {
+                            text += "\n[blocked import: " + data.rejected_module + "]";
+                        }
+                        if (data.timed_out) {
+                            text += "\n[program timed out]";
+                        }
+                        output.textContent = text || "(no output)";
+                        output.className = "playground-output " +
+                            (data.ok ? "is-ok" : "is-error");
+                        if (data.passed === true) {
+                            setStatus("\u2713 Output matches \u2014 great job!");
+                        } else if (data.passed === false) {
+                            setStatus("\u2717 Output does not match yet.");
+                        } else {
+                            setStatus(data.duration_ms + " ms");
+                        }
+                    })
+                    .catch(function(err) {
+                        output.textContent = String(err);
+                        output.className = "playground-output is-error";
+                        setStatus("");
+                    })
+                    .finally(function() { runBtn.disabled = false; });
+            });
+        }
+
+        var saveBtn = document.getElementById("pg-save");
+        if (saveBtn) {
+            saveBtn.addEventListener("click", function() {
+                postJSON("/api/exercises/" + EX_ID + "/save", { code: editor.value })
+                    .then(function() { setStatus("Code saved."); })
+                    .catch(function(err) { setStatus(String(err)); });
+            });
+        }
+
+        var resetBtn = document.getElementById("pg-reset");
+        if (resetBtn) {
+            resetBtn.addEventListener("click", function() {
+                if (!window.confirm("Reset the editor to the starter code? Your draft will be cleared.")) return;
+                postJSON("/api/exercises/" + EX_ID + "/reset", {})
+                    .then(function(data) {
+                        editor.value =
+                            data.starter_code !== undefined ? data.starter_code : STARTER;
+                        setStatus("Starter code restored.");
+                    })
+                    .catch(function(err) { setStatus(String(err)); });
+            });
+        }
+
+        // Ctrl+Enter runs the code.
+        editor.addEventListener("keydown", function(ev) {
+            if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter" && runBtn && !runBtn.disabled) {
+                ev.preventDefault();
+                runBtn.click();
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

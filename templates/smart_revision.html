@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Smart Revision</h1>
+        <p class="page-subtitle">{{ course.title }} · {{ history_count }} item{{ 's' if history_count != 1 }} reviewed so far</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('revision_history', course_id=course.id) }}" class="btn btn-secondary">History</a>
+        <a href="{{ url_for('print_revision_cards', course_id=course.id) }}" class="btn btn-secondary">🖨 Revision Cards</a>
+        <a href="{{ url_for('course_health', course_id=course.id) }}" class="btn btn-secondary">Health</a>
+    </div>
+</div>
+
+{% if items %}
+<ul style="list-style:none; padding:0; display:grid; gap:0.75rem; max-width:760px;">
+    {% for item in items %}
+    <li class="card" style="padding:1rem;">
+        <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; align-items:flex-start;">
+            <div>
+                <span class="tag tag--category">{{ item.source_type | replace('_', ' ') }}</span>
+                <strong style="display:block; margin:0.35rem 0;">{{ item.title }}</strong>
+                <span style="font-size:0.88rem;">{{ item.detail }}</span>
+            </div>
+            <div style="display:flex; gap:0.4rem;">
+                <form method="POST" action="{{ url_for('record_revision_review', course_id=course.id) }}">
+                    <input type="hidden" name="source_type" value="{{ item.source_type }}">
+                    <input type="hidden" name="ref_type" value="{{ item.ref_type }}">
+                    <input type="hidden" name="ref_id" value="{{ item.ref_id }}">
+                    <button type="submit" class="btn btn-primary btn-sm">✓ Reviewed</button>
+                </form>
+                <a href="{{ item.url }}" class="btn btn-secondary btn-sm">Open</a>
+            </div>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="empty-state">
+    <p>Nothing to revise right now. Recommendations appear automatically from your quizzes, notes and markers.</p>
+</div>
+{% endif %}
+
+<p style="margin-top:2rem;"><a href="{{ url_for('study_pack') }}">← Study Pack</a></p>
+{% endblock %}

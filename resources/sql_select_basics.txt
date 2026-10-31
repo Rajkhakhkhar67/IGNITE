@@ -1,0 +1,23 @@
+SQL SELECT BASICS — SQL & Database Foundations
+==============================================
+
+READ A QUERY OUT LOUD:
+  SELECT name, age      -- which columns
+  FROM students          -- which table
+  WHERE age >= 18        -- keep which rows
+  ORDER BY age DESC      -- sort
+  LIMIT 5;               -- cap results
+
+OPERATORS
+  =  <>  >  <  >=  <=
+  BETWEEN 10 AND 20
+  IN ('Surat', 'Baroda')
+  LIKE 'ra%'      -- starts with Ra
+  IS NULL / IS NOT NULL
+
+AGGREGATES
+  SELECT COUNT(*) FROM students;
+  SELECT city, COUNT(*) FROM students GROUP BY city;
+
+SAFETY RULE
+  Always write the WHERE before running UPDATE/DELETE.

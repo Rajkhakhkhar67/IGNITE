@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Register · Learning Platform{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card">
+        <h1 class="auth-title">Create your account</h1>
+        <p class="auth-subtitle">Join the Learning Platform and start learning.</p>
+
+        <form method="POST" action="{{ url_for('register') }}" class="auth-form">
+            <div class="form-group">
+                <label for="full_name">Full name</label>
+                <input type="text" id="full_name" name="full_name" required
+                       placeholder="e.g. Raj Khakhkhar"
+                       value="{{ request.form.get('full_name', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email address</label>
+                <input type="email" id="email" name="email" required
+                       placeholder="you@example.com"
+                       value="{{ request.form.get('email', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required
+                       placeholder="Minimum 6 characters">
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required
+                       placeholder="Re-enter your password">
+            </div>
+
+            <div class="form-group">
+                <label for="role">I am a</label>
+                <select id="role" name="role" required>
+                    <option value="" disabled {% if not request.form.get('role') %}selected{% endif %}>Select your role</option>
+                    <option value="student" {% if request.form.get('role') == 'student' %}selected{% endif %}>Student</option>
+                    <option value="instructor" {% if request.form.get('role') == 'instructor' %}selected{% endif %}>Instructor</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary auth-submit">Create Account</button>
+        </form>
+
+        <p class="auth-footer">
+            Already have an account?
+            <a href="{{ url_for('login') }}">Log in here</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

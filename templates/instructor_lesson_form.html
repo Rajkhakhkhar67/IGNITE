@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if editing else 'New' }} Lesson · {{ module.title }}{% endblock %}
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card" style="max-width:600px;">
+        <h1 class="auth-title">{{ 'Edit Lesson' if editing else 'Add Lesson' }}</h1>
+        <p class="auth-subtitle">Module: {{ module.title }} · Course: {{ course.title }}</p>
+
+        <form method="POST" enctype="multipart/form-data" class="auth-form">
+            <div class="form-group">
+                <label for="title">Lesson Title *</label>
+                <input type="text" id="title" name="title" required
+                       placeholder="e.g. Introduction to Python"
+                       value="{{ lesson.title if editing else '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="2"
+                          placeholder="Brief lesson description">{{ lesson.description if editing else '' }}</textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group" style="flex:1;">
+                    <label for="lesson_type">Lesson Type *</label>
+                    <select id="lesson_type" name="lesson_type" required>
+                        <option value="text" {{ 'selected' if editing and lesson.lesson_type == 'text' }}>Text</option>
+                        <option value="video" {{ 'selected' if editing and lesson.lesson_type == 'video' }}>Video</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label for="duration">Duration (minutes)</label>
+                    <input type="number" id="duration" name="duration" min="0.5" step="0.5"
+                           value="{{ '%g'|format(lesson.duration / 60) if editing and lesson.duration else '' }}"
+                           placeholder="Optional">
+                    <p class="form-hint">Stored precisely in seconds — e.g. 6.5 min = 390 s{% if editing and lesson.duration %} · currently {{ lesson.duration|duration }}{% endif %}</p>
+                </div>
+            </div>
+
+            <!-- Text content (shown for text type) -->
+            <div class="form-group" id="text-content-group">
+                <label for="content_text">Lesson Content</label>
+                <textarea id="content_text" name="content_text" rows="12"
+                          placeholder="Enter lesson text content here...">{{ lesson.content_text if editing and lesson.content_text else '' }}</textarea>
+            </div>
+
+            <!-- Video upload (shown for video type) -->
+            <div class="form-group" id="video-content-group" style="display:none;">
+                <label for="video_file">Video File</label>
+                {% if editing and lesson.lesson_type == 'video' and not lesson.content_path %}
+                <p class="form-hint" style="color:#b45309; font-weight:600;">⚠ VIDEO MISSING — no video file is attached to this lesson yet. Students currently see a placeholder.</p>
+                {% endif %}
+                <input type="file" id="video_file" name="video_file" accept=".mp4,.webm,.ogg">
+                {% if editing and lesson.content_path %}
+                <p class="form-hint">Current: {{ lesson.content_path }} — choosing a new file replaces it.</p>
+                {% endif %}
+                <p class="form-hint">Allowed formats: MP4, WebM, OGG (max 200 MB)</p>
+            </div>
+
+            {% if editing %}
+            <div class="form-group">
+                <label for="position">Order Position</label>
+                <input type="number" id="position" name="position" min="1"
+                       value="{{ lesson.position }}">
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary auth-submit">{{ 'Save Changes' if editing else 'Add Lesson' }}</button>
+        </form>
+
+        <p class="auth-footer">
+            <a href="{{ url_for('instructor_course_detail', course_id=course.id) }}">← Back to Course</a>
+        </p>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var typeSelect = document.getElementById('lesson_type');
+    var textGroup = document.getElementById('text-content-group');
+    var videoGroup = document.getElementById('video-content-group');
+    function toggle() {
+        if (typeSelect.value === 'video') {
+            textGroup.style.display = 'none';
+            videoGroup.style.display = 'block';
+        } else {
+            textGroup.style.display = 'block';
+            videoGroup.style.display = 'none';
+        }
+    }
+    typeSelect.addEventListener('change', toggle);
+    toggle();
+});
+</script>
+{% endblock %}
+{% endblock %}

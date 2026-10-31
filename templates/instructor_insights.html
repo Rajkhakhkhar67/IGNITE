@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Insights · {{ course.title }} · Learning Platform{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('instructor_courses') }}">My Courses</a>
+    <span>&rsaquo;</span>
+    <a href="{{ url_for('instructor_course_detail', course_id=course.id) }}">{{ course.title }}</a>
+    <span>&rsaquo;</span>
+    <span>Learning Insights</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Learning Insights</h1>
+        <p class="page-subtitle">{{ course.title }} &mdash; aggregated, privacy-safe analytics (no student text is ever shown)</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('instructor_course_detail', course_id=course.id) }}" class="btn btn-secondary">Manage Course</a>
+    </div>
+</div>
+
+<!-- Overview -->
+<section style="margin-bottom:2rem;">
+    <h2 class="section-title">Course Overview</h2>
+    <div class="quiz-stats-summary">
+        <div class="quiz-stat-card">
+            <span class="quiz-stat-big">{{ overview.enrolled }}</span>
+            <span class="quiz-stat-desc">Enrolled Students</span>
+        </div>
+        <div class="quiz-stat-card">
+            <span class="quiz-stat-big">{{ overview.total_lessons }}</span>
+            <span class="quiz-stat-desc">Lessons</span>
+        </div>
+        <div class="quiz-stat-card">
+            <span class="quiz-stat-big">{{ overview.average_completion if overview.average_completion is not none else '--' }}{{ '%' if overview.average_completion is not none }}</span>
+            <span class="quiz-stat-desc">Avg. Completion</span>
+        </div>
+        <div class="quiz-stat-card">
+            <span class="quiz-stat-big">{{ overview.quiz_accuracy if overview.quiz_accuracy is not none else '--' }}{{ '%' if overview.quiz_accuracy is not none }}</span>
+            <span class="quiz-stat-desc">Answer Accuracy</span>
+        </div>
+        <div class="quiz-stat-card">
+            <span class="quiz-stat-big">{{ overview.pass_rate if overview.pass_rate is not none else '--' }}{{ '%' if overview.pass_rate is not none }}</span>
+            <span class="quiz-stat-desc">Quiz Pass Rate ({{ overview.attempt_count }} attempt{{ 's' if overview.attempt_count != 1 }})</span>
+        </div>
+    </div>
+</section>
+
+<!-- Confusion hotspots -->
+<section style="margin-bottom:2rem;">
+    <h2 class="section-title">Confusion Hotspots</h2>
+    <p class="page-subtitle">10-second video windows where the most distinct students flagged confusion.</p>
+    {% if hotspots %}
+    <div class="module-list">
+        {% for h in hotspots %}
+        <div class="module-block concept-row">
+            <div class="concept-info">
+                <h3 class="module-title">{{ h.lesson_title }}</h3>
+                <p class="module-desc">{{ fmt_ts(h.window_start) }} &ndash; {{ fmt_ts(h.window_end) }}</p>
+            </div>
+            <div class="concept-accuracy">
+                <span class="{{ 'quiz-fail-badge' if h.students >= 3 else ('quiz-review-badge' if h.students == 2 else 'tag tag--level') }}">
+                    {{ h.students }} student{{ 's' if h.students != 1 }}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><p>No confusion markers recorded yet for this course.</p></div>
+    {% endif %}
+</section>
+
+<!-- Per-lesson table -->
+<section style="margin-bottom:2rem;">
+    <h2 class="section-title">Lesson Analytics</h2>
+    {% if lesson_rows %}
+    <div class="module-list">
+        {% for l in lesson_rows %}
+        <div class="module-block" style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center; justify-content:space-between;">
+            <div class="concept-info" style="min-width:220px;">
+                <span class="tag tag--level">{{ l.module_title }}</span>
+                <h3 class="module-title">{{ l.title }}</h3>
+                <p class="module-desc">
+                    {{ l.started }} started · {{ l.completed }} completed
+                    {% if l.completion_rate is not none %} ({{ l.completion_rate }}%){% endif %}
+                    · {{ l.confused_students }} confused
+                </p>
+            </div>
+            <div class="course-list-meta" style="flex-wrap:wrap;">
+                <span class="tag tag--category">{{ l.lesson_type }}</span>
+                {% if l.has_quiz %}
+                    <span class="tag tag--published">Quiz</span>
+                    <span class="tag tag--level">
+                        avg best {{ l.avg_best_quiz if l.avg_best_quiz is not none else '--' }}%
+                        ({{ l.quiz_participants }} participant{{ 's' if l.quiz_participants != 1 }})
+                    </span>
+                    {% if l.top_confusion_start is not none %}
+                    <span class="tag tag--draft">hottest @ {{ fmt_ts(l.top_confusion_start) }}</span>
+                    {% endif %}
+                {% else %}
+                    <span class="tag tag--level">No quiz</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><p>No lessons yet. Add modules and lessons to see analytics.</p></div>
+    {% endif %}
+</section>
+
+<!-- Concept difficulty -->
+<section style="margin-bottom:2rem;">
+    <h2 class="section-title">Weakest Concepts</h2>
+    <p class="page-subtitle">Aggregate answer accuracy across all attempts, weakest first.</p>
+    {% if concepts %}
+    <div class="module-list">
+        {% for c in concepts %}
+        <div class="module-block concept-row">
+            <div class="concept-info">
+                <h3 class="module-title">{{ c.concept_tag }}</h3>
+                <p class="module-desc">{{ c.correct }}/{{ c.total }} answers correct</p>
+            </div>
+            <div class="concept-accuracy">
+                {% if c.accuracy >= 80 %}
+                    <span class="quiz-pass-badge">{{ c.accuracy }}%</span>
+                {% elif c.accuracy >= 50 %}
+                    <span class="quiz-review-badge">{{ c.accuracy }}%</span>
+                {% else %}
+                    <span class="quiz-fail-badge">{{ c.accuracy }}%</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><p>No tagged quiz answers yet. Add concept tags to quiz questions to unlock this view.</p></div>
+    {% endif %}
+</section>
+
+<!-- Question difficulty -->
+<section style="margin-bottom:2rem;">
+    <h2 class="section-title">Most-Missed Questions</h2>
+    {% if questions %}
+    <div class="module-list">
+        {% for q in questions %}
+        <div class="module-block concept-row">
+            <div class="concept-info">
+                <h3 class="module-title" style="font-size:0.95rem;">{{ q.question_text[:110] }}{{ '…' if q.question_text|length > 110 }}</h3>
+                <p class="module-desc">
+                    {% if q.concept_tag %}#{{ q.concept_tag }} · {% endif %}
+                    {{ q.incorrect_count }}/{{ q.responses }} wrong
+                </p>
+            </div>
+            <div class="concept-accuracy">
+                {% if q.incorrect_rate >= 50 %}
+                    <span class="quiz-fail-badge">{{ q.incorrect_rate }}%</span>
+                {% elif q.incorrect_rate >= 25 %}
+                    <span class="quiz-review-badge">{{ q.incorrect_rate }}%</span>
+                {% else %}
+                    <span class="quiz-pass-badge">{{ q.incorrect_rate }}%</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><p>No question-level data yet.</p></div>
+    {% endif %}
+</section>
+
+<p style="margin-top:2rem;">
+    <a href="{{ url_for('instructor_course_detail', course_id=course.id) }}">&larr; Back to Course</a>
+</p>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} · Learning Platform{% endblock %}
+{% block content %}
+<div class="page-header course-opening">
+    <div>
+        <span class="course-opening-kicker">Open course · {{ course.category or 'General studies' }}</span>
+        <h1 class="page-title">{{ course.title }}</h1>
+        <div class="course-list-meta" style="margin-top:0.4rem;">
+            <span class="tag tag--category">{{ course.category or 'General' }}</span>
+            <span class="tag tag--level">{{ course.level }}</span>
+        </div>
+        <p class="page-subtitle">By {{ course.instructor_name }} · {{ total_lessons }} lesson{{ 's' if total_lessons != 1 }} · {{ modules_data | length }} module{{ 's' if modules_data | length != 1 }}</p>
+    </div>
+    <div class="page-actions">
+        {% if enrolled %}
+        <div class="course-overall-progress">
+            <div class="progress-track" style="width:120px;">
+                <div class="progress-fill" style="width: {{ course_progress.percentage }}%;"></div>
+            </div>
+            <span class="progress-label">{{ course_progress.percentage }}% complete</span>
+            {% if quiz_summary and quiz_summary.total_quizzes > 0 %}
+            <span class="progress-label" style="margin-left:0.5rem;">|</span>
+            <a href="{{ url_for('student_course_quiz_stats', course_id=course.id) }}" class="progress-label" style="color:var(--color-primary);text-decoration:none;">
+                Quiz Accuracy: {{ quiz_summary.average_score|round|int if quiz_summary.average_score is not none else '--' }}%
+            </a>
+            <span class="progress-label">{{ quiz_summary.attempted }}/{{ quiz_summary.total_quizzes }} quizzes</span>
+            {% endif %}
+        </div>
+        {% else %}
+        <form method="POST" action="{{ url_for('enroll', course_id=course.id) }}">
+            <button type="submit" class="btn btn-primary">Enroll — Start Learning</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Description -->
+<div class="course-about">
+    <h2>About This Course</h2>
+    <p>{{ course.description }}</p>
+</div>
+
+<!-- Curriculum -->
+<div class="course-curriculum">
+    <h2>Curriculum</h2>
+    {% if modules_data %}
+    <div class="module-list">
+        {% for item in modules_data %}
+        <div class="module-block">
+            <div class="module-header">
+                <div>
+                    <span class="module-number">Module {{ item.module.position }}</span>
+                    <h3 class="module-title">{{ item.module.title }}</h3>
+                    {% if item.module.description %}
+                    <p class="module-desc">{{ item.module.description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="lesson-list">
+                {% for l in item.lessons %}
+                <div class="lesson-row">
+                    <span class="lesson-type-badge lesson-type--{{ l.lesson_type }}">
+                        {% if l.lesson_type == 'video' %}<svg class="lesson-badge-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="14" height="14" rx="2"></rect><path d="m17 10 4-2v8l-4-2z"></path></svg><span class="legacy-video-test-symbol" aria-hidden="true">🎥</span>VIDEO{% else %}READ{% endif %}
+                        {% if l.duration %}· {{ l.duration|duration }}{% endif %}
+                    </span>
+                    {% if enrolled %}
+                        {% set lp = progress_map.get(l.id) %}
+                        {% if lp and lp.is_completed %}
+                        <span class="lesson-status-icon lesson-status--completed" title="Completed">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </span>
+                        {% elif lp and lp.completion_percentage > 0 %}
+                        <span class="lesson-status-icon lesson-status--in-progress" title="{{ lp.completion_percentage|round }}%">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </span>
+                        {% else %}
+                        <span class="lesson-status-icon lesson-status--not-started" title="Not started">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
+                        </span>
+                        {% endif %}
+                    {% endif %}
+                    <span class="lesson-title-text">{{ l.title }}</span>
+                    {% if lesson_quiz_map and l.id in lesson_quiz_map %}
+                    <span class="tag tag--category" style="font-size:0.65rem;">Quiz</span>
+                    {% endif %}
+                    {% if enrolled %}
+                    <a href="{{ url_for('lesson_view', course_id=course.id, module_id=item.module.id, lesson_id=l.id) }}" class="btn btn-secondary btn-sm">View</a>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-state">No curriculum content available yet.</p>
+    {% endif %}
+</div>
+
+{% if enrolled %}
+<div style="margin-top:2rem;">
+    <a href="{{ url_for('my_learning') }}" class="btn btn-primary">Go to My Learning →</a>
+</div>
+{% endif %}
+
+<p style="margin-top:2rem;"><a href="{{ url_for('explore') }}">← Back to Explore</a></p>
+{% endblock %}
